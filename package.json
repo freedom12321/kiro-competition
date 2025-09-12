@@ -1,0 +1,43 @@
+{
+  "name": "ai-habitat-simulation-engine",
+  "version": "1.0.0",
+  "description": "A 2.5D isometric game for learning AI alignment through emergent storytelling",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run build:clean && npm run build:compile && npm run build:optimize",
+    "build:clean": "rm -rf dist",
+    "build:compile": "tsc && vite build",
+    "build:optimize": "node scripts/build-optimizer.js",
+    "build:analyze": "npm run build && npx vite-bundle-analyzer dist",
+    "preview": "vite preview",
+    "deploy:staging": "npm run build && npm run deploy:upload -- staging",
+    "deploy:production": "npm run build && npm run deploy:upload -- production",
+    "deploy:upload": "node scripts/deploy.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:compatibility": "node scripts/test-compatibility.js",
+    "serve:local": "npx http-server dist -p 8080 -c-1"
+  },
+  "dependencies": {
+    "@types/three": "^0.158.3",
+    "cannon-es": "^0.20.0",
+    "gsap": "^3.12.2",
+    "three": "^0.158.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.8",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "eslint": "^8.54.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "puppeteer": "^21.5.2",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0",
+    "vite-bundle-analyzer": "^0.7.0"
+  },
+  "type": "module"
+}
