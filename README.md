@@ -150,19 +150,6 @@ AI Habitat teaches core AI concepts through experiential learning:
 - **Optimization Pressure**: Discover how AI "helping" can become harmful
 - **Governance Necessity**: Learn why rules and oversight matter through failures
 
-## 🤝 Contributing
-
-We welcome contributions! Please see our contributing guidelines for details on:
-
-- Code style and standards
-- Testing requirements
-- Pull request process
-- Issue reporting
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
 ## 🙏 Acknowledgments
 
 - Three.js community for excellent 3D graphics tools
