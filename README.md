@@ -1,5 +1,7 @@
 # AI Habitat: Harmony or Havoc?
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 <div align="center">
 
 <img alt="AI Habitat – Harmony or Havoc?" src="docs/hero.png" width="820" />
@@ -154,7 +156,7 @@ AI Habitat teaches core AI concepts through experiential learning:
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our contributing guidelines for details on:
+We welcome contributions! See `CONTRIBUTING.md` for details on:
 
 - Code style and standards
 - Testing requirements
