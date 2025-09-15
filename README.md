@@ -7,9 +7,7 @@
 <img alt="AI Habitat – Harmony or Havoc?" src="docs/hero.png" width="820" />
 
 <br/>
-<sub>
-If the image above doesn’t render, place your PNG at <code>docs/hero.png</code> (suggested size ~1280×720). You can also use <code>docs/hero.png?raw=true</code> when viewing on GitHub.
-</sub>
+
 
 </div>
 
@@ -156,7 +154,7 @@ AI Habitat teaches core AI concepts through experiential learning:
 
 ## 🤝 Contributing
 
-We welcome contributions! See `CONTRIBUTING.md` for details on:
+We welcome contributions! Please see our contributing guidelines for details on:
 
 - Code style and standards
 - Testing requirements
