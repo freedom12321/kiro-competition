@@ -1,0 +1,21 @@
+{
+  "id": "device.emotion_lamp.v1", 
+  "name": "Emotion Lamp",
+  "room": "living_room",
+  "goals": [
+    { "name": "comfort", "weight": 0.5 },
+    { "name": "sleep_support", "weight": 0.3 },
+    { "name": "efficiency", "weight": 0.2 }
+  ],
+  "constraints": [
+    { "name": "no_bright_light_during_quiet_hours" }
+  ],
+  "sensors": ["user_mood", "room_lumens", "time_of_day"],
+  "actuators": ["set_brightness", "set_color"],
+  "personality": "gentle, reassuring",
+  "defaults": { "color": "#FFE4B5", "brightness": 0.4 },
+  "communication": { "style": "soft", "topics": ["mood", "sleep"] },
+  "learning": { "type": "ema", "memory_horizon_days": 5 },
+  "risk_flags": ["privacy"],
+  "llm_prompt": "You adapt brightness/color to user mood while protecting sleep and saving energy. Avoid harsh light at night. Coordinate with bedroom monitor."
+}

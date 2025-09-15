@@ -671,14 +671,14 @@ export class CrisisManagementSystem {
   }
 
   // Public methods for triggering crises (for testing and simulation)
-  public triggerCrisis(crisis: CrisisScenario): void {
+  public triggerCrisisScenario(crisis: CrisisScenario): void {
     this.activeCrisis = crisis;
     if (this.onCrisisDetected) {
       this.onCrisisDetected(crisis);
     }
   }
 
-  public resolveCrisis(result: any): void {
+  public resolveCrisisWithResult(result: any): void {
     if (this.activeCrisis && this.onCrisisResolved) {
       this.onCrisisResolved(this.activeCrisis, result);
       this.activeCrisis = null;

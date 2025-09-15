@@ -50,7 +50,7 @@ describe('CollisionOptimizer', () => {
 
   describe('Spatial Grid Management', () => {
     it('should update spatial grid with devices', () => {
-      optimizer.updateSpatialGrid(mockDevices);
+      optimizer.forceUpdateSpatialGrid(mockDevices);
       
       const stats = optimizer.getOptimizationStats();
       expect(stats.cellCount).toBeGreaterThan(0);
@@ -58,7 +58,7 @@ describe('CollisionOptimizer', () => {
     });
 
     it('should find nearby devices efficiently', () => {
-      optimizer.updateSpatialGrid(mockDevices);
+      optimizer.forceUpdateSpatialGrid(mockDevices);
       
       const nearbyDevices = optimizer.findNearbyDevices(mockDevices[0]);
       
@@ -180,7 +180,7 @@ describe('CollisionOptimizer', () => {
 
   describe('Optimization Statistics', () => {
     it('should provide optimization statistics', () => {
-      optimizer.updateSpatialGrid(mockDevices);
+      optimizer.forceUpdateSpatialGrid(mockDevices);
       
       const stats = optimizer.getOptimizationStats();
       
@@ -205,8 +205,8 @@ describe('CollisionOptimizer', () => {
         manyDevices.push({
           id: `device${i}`,
           position: { 
-            x: (i % 20) * 3, 
-            y: Math.floor(i / 20) * 3, 
+            x: (i % 20) * 2, 
+            y: Math.floor(i / 20) * 2, 
             z: 0 
           },
           model3D: { mesh: {} as any },

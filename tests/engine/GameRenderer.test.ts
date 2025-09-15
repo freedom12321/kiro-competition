@@ -1,6 +1,39 @@
 import { GameRenderer } from '@/engine/GameRenderer';
 import { GameScene, EnvironmentType, AnimationType, EffectType } from '@/types/core';
 
+// Mock THREE.js
+const mockTHREE = {
+  Box3: jest.fn().mockImplementation(() => ({})),
+  Mesh: jest.fn().mockImplementation(() => ({
+    position: { 
+      x: 0, y: 0, z: 0,
+      set: jest.fn()
+    },
+    rotation: { 
+      x: 0, y: 0, z: 0,
+      set: jest.fn()
+    },
+    scale: { 
+      x: 1, y: 1, z: 1,
+      set: jest.fn()
+    }
+  })),
+  Vector3: jest.fn().mockImplementation(() => ({ x: 0, y: 0, z: 0 })),
+  Scene: jest.fn().mockImplementation(() => ({})),
+  WebGLRenderer: jest.fn().mockImplementation(() => ({
+    setSize: jest.fn(),
+    render: jest.fn(),
+    dispose: jest.fn()
+  })),
+  PerspectiveCamera: jest.fn().mockImplementation(() => ({})),
+  AmbientLight: jest.fn().mockImplementation(() => ({})),
+  DirectionalLight: jest.fn().mockImplementation(() => ({})),
+  PointLight: jest.fn().mockImplementation(() => ({})),
+  AnimationClip: jest.fn().mockImplementation(() => ({}))
+};
+
+(window as any).THREE = mockTHREE;
+
 describe('GameRenderer', () => {
   let container: HTMLElement;
   let gameRenderer: GameRenderer;

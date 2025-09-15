@@ -1,0 +1,60 @@
+/* Global styles for AI Habitat */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f5f5f5;
+  color: #333;
+}
+
+button {
+  font-family: inherit;
+  font-size: 14px;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+.primary-button {
+  background: #4CAF50;
+  color: white;
+  font-weight: 500;
+  padding: 12px 24px;
+}
+
+.primary-button:hover {
+  background: #45a049;
+}
+
+.secondary-button {
+  background: #f8f9fa;
+  color: #333;
+  border: 1px solid #dee2e6;
+}
+
+.secondary-button:hover {
+  background: #e9ecef;
+}
+
+.danger-button {
+  background: #dc3545;
+  color: white;
+}
+
+.danger-button:hover {
+  background: #c82333;
+}

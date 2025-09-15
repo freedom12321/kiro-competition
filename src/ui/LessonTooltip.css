@@ -1,0 +1,31 @@
+.lesson-tooltip {
+  position: fixed;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  min-width: 280px;
+  max-width: 400px;
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+}
+
+.lesson-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.lesson-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.lesson-message {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #333;
+}

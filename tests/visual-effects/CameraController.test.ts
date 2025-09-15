@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CameraController } from '../../src/visual-effects/CameraController.js';
+import { CameraController } from '../../src/visual-effects/CameraController';
 import { Vector3 } from '../../src/types/core.js';
 
 // Mock THREE.js components

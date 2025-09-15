@@ -41,6 +41,10 @@ export class CollisionOptimizer {
     }
     
     this.lastUpdateTime = currentTime;
+    this.forceUpdateSpatialGrid(devices);
+  }
+
+  public forceUpdateSpatialGrid(devices: DeviceVisual[]): void {
     this.spatialGrid.cells.clear();
 
     for (const device of devices) {
@@ -101,7 +105,7 @@ export class CollisionOptimizer {
   }
 
   public findInteractionPairs(devices: DeviceVisual[]): CollisionPair[] {
-    this.updateSpatialGrid(devices);
+    this.forceUpdateSpatialGrid(devices);
     const pairs: CollisionPair[] = [];
     const processedPairs = new Set<string>();
 

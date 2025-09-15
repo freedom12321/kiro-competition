@@ -1112,8 +1112,4 @@ export class GameHUD {
   public showCrisisAlert(crisis: any): void {
     console.log('Crisis alert shown:', crisis);
   }
-
-  public displayStoryMoment(moment: any): void {
-    console.log('Story moment displayed:', moment);
-  }
 }

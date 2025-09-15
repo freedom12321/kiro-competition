@@ -1,4 +1,4 @@
-import { AccessibilityManager } from '../../src/accessibility/AccessibilityManager.js';
+import { AccessibilityManager } from '../../src/accessibility/AccessibilityManager';
 import {
   AccessibilitySettings,
   ColorBlindnessType,

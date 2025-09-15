@@ -365,7 +365,7 @@ describe('RuleEnforcementVisualizer', () => {
       const protectionStatus = container.querySelector('#protection-status');
       expect(protectionStatus?.classList.contains('active')).toBe(true);
 
-      const protectionText = container.querySelector('.indicator-text');
+      const protectionText = container.querySelector('#protection-status .indicator-text');
       expect(protectionText?.textContent).toBe('Constitutional Protection Active');
     });
 

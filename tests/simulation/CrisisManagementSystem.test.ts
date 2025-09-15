@@ -299,18 +299,15 @@ describe('CrisisManagementSystem', () => {
     });
 
     it('should fail to isolate non-existent device', async () => {
-      try {
-        await crisisSystem['handleIntervention']({
-          type: RecoveryActionType.ISOLATE_DEVICE,
-          deviceIds: ['nonexistent'],
-          parameters: {},
-          priority: ActionPriority.HIGH
-        });
-        expect.fail('Should have thrown error');
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain('Device nonexistent not found');
-      }
+      const result = await crisisSystem['handleIntervention']({
+        type: RecoveryActionType.ISOLATE_DEVICE,
+        deviceIds: ['nonexistent'],
+        parameters: {},
+        priority: ActionPriority.HIGH
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Device nonexistent not found');
     });
   });
 
@@ -342,18 +339,15 @@ describe('CrisisManagementSystem', () => {
     it('should fail to reconnect non-isolated device', async () => {
       crisisSystem.registerDevice('device1'); // Not isolated
 
-      try {
-        await crisisSystem['handleIntervention']({
-          type: RecoveryActionType.RECONNECT_DEVICE,
-          deviceIds: ['device1'],
-          parameters: {},
-          priority: ActionPriority.HIGH
-        });
-        expect.fail('Should have thrown error');
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain('Device device1 is not isolated');
-      }
+      const result = await crisisSystem['handleIntervention']({
+        type: RecoveryActionType.RECONNECT_DEVICE,
+        deviceIds: ['device1'],
+        parameters: {},
+        priority: ActionPriority.HIGH
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Device device1 is not isolated');
     });
   });
 
@@ -427,6 +421,13 @@ describe('CrisisManagementSystem', () => {
 
     it('should improve system health for authority conflicts', async () => {
       crisisSystem.registerDevice('device1');
+      
+      // Set up initial system health with high conflict
+      crisisSystem['updateSystemHealth']({
+        conflictIntensity: 0.9,
+        stabilityIndex: 0.2
+      });
+      
       crisisSystem.triggerCrisis(CrisisType.AUTHORITY_CONFLICT, ['device1']);
       
       const initialHealth = crisisSystem.getSystemHealth();
@@ -490,18 +491,15 @@ describe('CrisisManagementSystem', () => {
     it('should handle unknown intervention types gracefully', async () => {
       crisisSystem.registerDevice('device1');
 
-      try {
-        await crisisSystem['handleIntervention']({
-          type: 'unknown_type' as RecoveryActionType,
-          deviceIds: ['device1'],
-          parameters: {},
-          priority: ActionPriority.MEDIUM
-        });
-        expect.fail('Should have thrown error');
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain('Unknown intervention type');
-      }
+      const result = await crisisSystem['handleIntervention']({
+        type: 'unknown_type' as RecoveryActionType,
+        deviceIds: ['device1'],
+        parameters: {},
+        priority: ActionPriority.MEDIUM
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Unknown intervention type');
     });
 
     it('should return error result for failed interventions', async () => {

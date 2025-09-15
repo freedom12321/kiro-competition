@@ -155,6 +155,10 @@ export class ReflectionJournal {
       .sort((a, b) => b.timestamp - a.timestamp);
   }
 
+  getAllEntries(): JournalEntry[] {
+    return Array.from(this.entries.values());
+  }
+
   getRecentEntries(days: number = 7): JournalEntry[] {
     const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
     return Array.from(this.entries.values())

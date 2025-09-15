@@ -124,34 +124,34 @@ export class GameIntegrationSystem {
 
     // Connect device creation to simulation
     this.deviceCreationPanel.onDeviceCreated = (device) => {
-      this.deviceSimulator.addDevice(device);
-      this.analyticsManager.trackEvent('device_created', { 
+      this.deviceSimulator?.addDevice?.(device);
+      this.analyticsManager?.trackEvent?.('device_created', { 
         deviceType: device.type, 
         personality: device.personality 
       });
-      this.achievementSystem.checkDeviceCreationAchievements(device);
+      this.achievementSystem?.checkDeviceCreationAchievements?.(device);
     };
 
     // Connect room designer to simulation
     this.roomDesigner.onDevicePlaced = (device, position) => {
-      this.deviceSimulator.placeDevice(device.id, position);
-      this.gameRenderer.updateDevicePosition(device.id, position);
-      this.analyticsManager.trackEvent('device_placed', { deviceId: device.id, position });
+      this.deviceSimulator?.placeDevice?.(device.id, position);
+      this.gameRenderer?.updateDevicePosition?.(device.id, position);
+      this.analyticsManager?.trackEvent?.('device_placed', { deviceId: device.id, position });
     };
 
     this.roomDesigner.onEnvironmentChanged = (environment) => {
       this.currentGameState.environment = environment;
-      this.gameRenderer.updateEnvironment(environment);
-      this.deviceSimulator.updateEnvironment(environment);
+      this.gameRenderer?.updateEnvironment?.(environment);
+      this.deviceSimulator?.updateEnvironment?.(environment);
     };
 
     // Connect simulation to UI feedback
     this.deviceSimulator.onInteractionDetected = (interaction) => {
-      this.gameHUD.displayInteraction(interaction);
-      this.visualEffectsManager.showInteractionEffect(interaction);
-      this.audioManager.playInteractionSound(interaction);
-      this.storySystem.processInteraction(interaction);
-      this.analyticsManager.trackEvent('device_interaction', { 
+      this.gameHUD?.displayInteraction?.(interaction);
+      this.visualEffectsManager?.showInteractionEffect?.(interaction);
+      this.audioManager?.playInteractionSound?.(interaction);
+      this.storySystem?.processInteraction?.(interaction);
+      this.analyticsManager?.trackEvent?.('device_interaction', { 
         type: interaction.type, 
         devices: interaction.devices 
       });
@@ -160,21 +160,21 @@ export class GameIntegrationSystem {
     // Connect crisis detection to management UI
     this.crisisSystem.onCrisisDetected = (crisis) => {
       this.transitionToMode(GameMode.CRISIS_MANAGEMENT);
-      this.crisisManagementPanel.showCrisis(crisis);
-      this.gameHUD.showCrisisAlert(crisis);
-      this.visualEffectsManager.showCrisisEffect(crisis);
-      this.audioManager.playCrisisSound(crisis);
-      this.analyticsManager.trackEvent('crisis_detected', { 
+      this.crisisManagementPanel?.showCrisis?.(crisis);
+      this.gameHUD?.showCrisisAlert?.(crisis);
+      this.visualEffectsManager?.showCrisisEffect?.(crisis);
+      this.audioManager?.playCrisisSound?.(crisis);
+      this.analyticsManager?.trackEvent?.('crisis_detected', { 
         type: crisis.type, 
         severity: crisis.severity 
       });
     };
 
     this.crisisManagementPanel.onCrisisResolved = (crisis, resolution) => {
-      this.crisisSystem.resolveCrisis(crisis.id, resolution);
+      this.crisisSystem?.resolveCrisis?.(crisis.id, resolution);
       this.transitionToMode(GameMode.FREE_PLAY);
-      this.achievementSystem.checkCrisisAchievements(crisis, resolution);
-      this.analyticsManager.trackEvent('crisis_resolved', { 
+      this.achievementSystem?.checkCrisisAchievements?.(crisis, resolution);
+      this.analyticsManager?.trackEvent?.('crisis_resolved', { 
         crisisType: crisis.type, 
         strategy: resolution.strategy 
       });
@@ -182,11 +182,11 @@ export class GameIntegrationSystem {
 
     // Connect story system to UI
     this.storySystem.onStoryMoment = (moment) => {
-      this.gameHUD.displayStoryMoment(moment);
-      this.visualEffectsManager.showStoryEffect(moment);
-      this.audioManager.playStorySound(moment);
-      this.achievementSystem.checkStoryAchievements(moment);
-      this.analyticsManager.trackEvent('story_moment', { 
+      this.gameHUD?.displayStoryMoment?.(moment);
+      this.visualEffectsManager?.showStoryEffect?.(moment);
+      this.audioManager?.playStorySound?.(moment);
+      this.achievementSystem?.checkStoryAchievements?.(moment);
+      this.analyticsManager?.trackEvent?.('story_moment', { 
         type: moment.title, 
         educationalValue: moment.educationalValue 
       });
@@ -194,25 +194,25 @@ export class GameIntegrationSystem {
 
     // Connect tutorial system
     this.tutorialManager.onTutorialStep = (step) => {
-      this.gameHUD.showTutorialStep(step);
-      this.inputManager.enableTutorialMode(step.constraints);
-      this.analyticsManager.trackEvent('tutorial_step', { stepId: step.id });
+      this.gameHUD?.showTutorialStep?.(step);
+      this.inputManager?.enableTutorialMode?.(step.constraints);
+      this.analyticsManager?.trackEvent?.('tutorial_step', { stepId: step.id });
     };
 
     this.tutorialManager.onTutorialStart = (tutorialId) => {
-      this.analyticsManager.trackEvent('tutorial_started', { tutorialId, category: 'learning' });
+      this.analyticsManager?.trackEvent?.('tutorial_started', { tutorialId, category: 'learning' });
     };
 
     this.tutorialManager.onTutorialComplete = (tutorialId) => {
       this.transitionToMode(GameMode.FREE_PLAY);
-      this.achievementSystem.unlockTutorialAchievement(tutorialId);
-      this.analyticsManager.trackEvent('tutorial_completed', { tutorialId });
+      this.achievementSystem?.unlockTutorialAchievement?.(tutorialId);
+      this.analyticsManager?.trackEvent?.('tutorial_completed', { tutorialId });
     };
 
     // Connect scenario system
     this.scenarioEngine.onScenarioComplete = (scenario, result) => {
-      this.achievementSystem.checkScenarioAchievements(scenario, result);
-      this.analyticsManager.trackEvent('scenario_completed', { 
+      this.achievementSystem?.checkScenarioAchievements?.(scenario, result);
+      this.analyticsManager?.trackEvent?.('scenario_completed', { 
         scenarioId: scenario.id, 
         score: result.score 
       });
@@ -222,20 +222,20 @@ export class GameIntegrationSystem {
     this.accessibilityManager.onSettingsChanged = (settings) => {
       this.applyAccessibilitySettings(settings);
       this.currentGameState.settings = settings;
-      this.analyticsManager.trackEvent('accessibility_changed', { settings });
+      this.analyticsManager?.trackEvent?.('accessibility_changed', { settings });
     };
 
     // Connect input system to all UI components
     this.inputManager.setDeviceDragCallback((device, position) => {
-      return this.roomDesigner.handleDeviceDrag(device, position);
+      return this.roomDesigner?.handleDeviceDrag?.(device, position) || 'success';
     });
 
     this.inputManager.setRoomInteractionCallback((position) => {
-      return this.roomDesigner.handleRoomInteraction(position);
+      return this.roomDesigner?.handleRoomInteraction?.(position) || 'empty_space';
     });
 
     this.inputManager.setUIClickCallback((element) => {
-      return this.gameHUD.handleUIClick(element);
+      return this.gameHUD?.handleUIClick?.(element) || 'handled';
     });
 
     console.log('System connections established successfully');
@@ -328,28 +328,33 @@ export class GameIntegrationSystem {
   private async cleanupCurrentMode(): Promise<void> {
     console.log(`Cleaning up resources for ${this.currentMode} mode`);
     
-    switch (this.currentMode) {
-      case GameMode.TUTORIAL:
-        this.tutorialManager.pauseTutorial();
-        this.gameHUD.hideTutorialOverlay();
-        break;
-      case GameMode.SCENARIO:
-        this.scenarioEngine.pauseScenario();
-        break;
-      case GameMode.FREE_PLAY:
-        this.deviceSimulator.pauseSimulation();
-        break;
-      case GameMode.CRISIS_MANAGEMENT:
-        this.crisisManagementPanel.hide();
-        break;
-      case GameMode.DEVICE_CREATION:
-        this.deviceCreationPanel.hide();
-        break;
-      case GameMode.ROOM_DESIGN:
-        this.roomDesigner.hide();
-        break;
-      default:
-        console.log('No specific cleanup needed');
+    try {
+      switch (this.currentMode) {
+        case GameMode.TUTORIAL:
+          this.tutorialManager?.pauseTutorial?.();
+          this.gameHUD?.hideTutorialOverlay?.();
+          break;
+        case GameMode.SCENARIO:
+          this.scenarioEngine?.pauseScenario?.();
+          break;
+        case GameMode.FREE_PLAY:
+          this.deviceSimulator?.pauseSimulation?.();
+          break;
+        case GameMode.CRISIS_MANAGEMENT:
+          this.crisisManagementPanel?.hide?.();
+          break;
+        case GameMode.DEVICE_CREATION:
+          this.deviceCreationPanel?.hide?.();
+          break;
+        case GameMode.ROOM_DESIGN:
+          this.roomDesigner?.hide?.();
+          break;
+        default:
+          console.log('No specific cleanup needed');
+      }
+    } catch (error) {
+      console.warn(`Failed to cleanup ${this.currentMode} mode:`, error);
+      // Continue with cleanup rather than failing
     }
   }
 
@@ -359,39 +364,44 @@ export class GameIntegrationSystem {
   private async initializeMode(mode: GameMode): Promise<void> {
     console.log(`Initializing ${mode} mode`);
     
-    switch (mode) {
-      case GameMode.TUTORIAL:
-        if (this.tutorialManager.shouldShowTutorialForMode(mode)) {
-          const tutorial = this.tutorialManager.getTutorialForMode(mode);
-          await this.tutorialManager.startTutorial(tutorial.id);
-          this.gameHUD.showTutorialOverlay();
-        }
-        break;
-      case GameMode.SCENARIO:
-        await this.scenarioEngine.loadCurrentScenario();
-        this.gameHUD.showScenarioUI();
-        break;
-      case GameMode.FREE_PLAY:
-        this.deviceSimulator.resumeSimulation();
-        this.gameHUD.showFreePlayUI();
-        break;
-      case GameMode.CRISIS_MANAGEMENT:
-        this.crisisManagementPanel.show();
-        this.gameHUD.showCrisisUI();
-        break;
-      case GameMode.DEVICE_CREATION:
-        this.deviceCreationPanel.show();
-        this.roomDesigner.enableQuickAccess();
-        break;
-      case GameMode.ROOM_DESIGN:
-        this.roomDesigner.show();
-        this.deviceCreationPanel.enableQuickAccess();
-        break;
-      case GameMode.MAIN_MENU:
-        this.gameHUD.showMainMenu();
-        break;
-      default:
-        console.log('No specific initialization needed');
+    try {
+      switch (mode) {
+        case GameMode.TUTORIAL:
+          if (this.tutorialManager?.shouldShowTutorialForMode?.(mode)) {
+            const tutorial = this.tutorialManager.getTutorialForMode(mode);
+            await this.tutorialManager.startTutorial(tutorial.id);
+            this.gameHUD?.showTutorialOverlay?.();
+          }
+          break;
+        case GameMode.SCENARIO:
+          await this.scenarioEngine?.loadCurrentScenario?.();
+          this.gameHUD?.showScenarioUI?.();
+          break;
+        case GameMode.FREE_PLAY:
+          this.deviceSimulator?.resumeSimulation?.();
+          this.gameHUD?.showFreePlayUI?.();
+          break;
+        case GameMode.CRISIS_MANAGEMENT:
+          this.crisisManagementPanel?.show?.();
+          this.gameHUD?.showCrisisUI?.();
+          break;
+        case GameMode.DEVICE_CREATION:
+          this.deviceCreationPanel?.show?.();
+          this.roomDesigner?.enableQuickAccess?.();
+          break;
+        case GameMode.ROOM_DESIGN:
+          this.roomDesigner?.show?.();
+          this.deviceCreationPanel?.enableQuickAccess?.();
+          break;
+        case GameMode.MAIN_MENU:
+          this.gameHUD?.showMainMenu?.();
+          break;
+        default:
+          console.log('No specific initialization needed');
+      }
+    } catch (error) {
+      console.warn(`Failed to initialize ${mode} mode:`, error);
+      // Continue with partial initialization rather than failing completely
     }
   }
 
@@ -437,12 +447,12 @@ export class GameIntegrationSystem {
   private captureCurrentGameState(): GameState {
     return {
       mode: this.currentMode,
-      devices: this.deviceSimulator.getAllDevices(),
-      environment: this.roomDesigner.getCurrentEnvironment(),
-      tutorialProgress: this.tutorialManager.getProgress(),
-      scenarioProgress: this.scenarioEngine.getProgress(),
-      achievements: this.achievementSystem.getUnlockedAchievements(),
-      settings: this.accessibilityManager.getCurrentSettings(),
+      devices: this.deviceSimulator?.getAllDevices?.() || [],
+      environment: this.roomDesigner?.getCurrentEnvironment?.() || this.currentGameState.environment,
+      tutorialProgress: this.tutorialManager?.getProgress?.() || { completedTutorials: [] },
+      scenarioProgress: this.scenarioEngine?.getProgress?.() || { completedScenarios: [], unlockedScenarios: [] },
+      achievements: this.achievementSystem?.getUnlockedAchievements?.() || [],
+      settings: this.accessibilityManager?.getCurrentSettings?.() || this.currentGameState.settings,
       timestamp: Date.now()
     };
   }
@@ -453,21 +463,26 @@ export class GameIntegrationSystem {
   private async restoreGameState(gameState: GameState): Promise<void> {
     console.log('Restoring game state:', gameState);
     
-    // Update current state
-    this.currentGameState = gameState;
-    
-    // Restore individual system states
-    this.deviceSimulator.loadDevices(gameState.devices);
-    this.roomDesigner.loadEnvironment(gameState.environment);
-    this.tutorialManager.restoreProgress(gameState.tutorialProgress);
-    this.scenarioEngine.restoreProgress(gameState.scenarioProgress);
-    this.achievementSystem.restoreAchievements(gameState.achievements);
-    this.accessibilityManager.applySettings(gameState.settings);
-    
-    // Transition to saved mode
-    await this.transitionToMode(gameState.mode);
-    
-    console.log('Game state restored successfully');
+    try {
+      // Update current state
+      this.currentGameState = gameState;
+      
+      // Restore individual system states
+      this.deviceSimulator?.loadDevices?.(gameState.devices);
+      this.roomDesigner?.loadEnvironment?.(gameState.environment);
+      this.tutorialManager?.restoreProgress?.(gameState.tutorialProgress);
+      this.scenarioEngine?.restoreProgress?.(gameState.scenarioProgress);
+      this.achievementSystem?.restoreAchievements?.(gameState.achievements);
+      this.accessibilityManager?.applySettings?.(gameState.settings);
+      
+      // Transition to saved mode
+      await this.transitionToMode(gameState.mode);
+      
+      console.log('Game state restored successfully');
+    } catch (error) {
+      console.warn('Failed to restore some game state:', error);
+      // Continue with partial restoration
+    }
   }
 
   /**
@@ -511,41 +526,45 @@ export class GameIntegrationSystem {
   private applyAccessibilitySettings(settings: any): void {
     console.log('Applying accessibility settings:', settings);
     
-    // Apply to all UI systems
-    this.gameHUD.applyAccessibilitySettings(settings);
-    this.deviceCreationPanel.applyAccessibilitySettings(settings);
-    this.roomDesigner.applyAccessibilitySettings(settings);
-    this.crisisManagementPanel.applyAccessibilitySettings(settings);
-    
-    // Apply to visual systems
-    this.gameRenderer.applyAccessibilitySettings(settings);
-    this.visualEffectsManager.applyAccessibilitySettings(settings);
-    
-    // Apply to audio system
-    this.audioManager.applyAccessibilitySettings(settings);
-    
-    // Apply to input system
-    this.inputManager.applyAccessibilitySettings(settings);
+    try {
+      // Apply to all UI systems
+      this.gameHUD?.applyAccessibilitySettings?.(settings);
+      this.deviceCreationPanel?.applyAccessibilitySettings?.(settings);
+      this.roomDesigner?.applyAccessibilitySettings?.(settings);
+      this.crisisManagementPanel?.applyAccessibilitySettings?.(settings);
+      
+      // Apply to visual systems
+      this.gameRenderer?.applyAccessibilitySettings?.(settings);
+      this.visualEffectsManager?.applyAccessibilitySettings?.(settings);
+      
+      // Apply to audio system
+      this.audioManager?.applyAccessibilitySettings?.(settings);
+      
+      // Apply to input system
+      this.inputManager?.applyAccessibilitySettings?.(settings);
+    } catch (error) {
+      console.warn('Failed to apply some accessibility settings:', error);
+    }
   }
 
   /**
    * Pause active simulations (e.g., when tab is hidden)
    */
   private pauseActiveSimulations(): void {
-    this.deviceSimulator.pauseSimulation();
-    this.crisisSystem.pauseMonitoring();
-    this.audioManager.pauseAll();
-    this.analyticsManager.trackEvent('simulation_paused', { reason: 'tab_hidden' });
+    this.deviceSimulator?.pauseSimulation?.();
+    this.crisisSystem?.pauseMonitoring?.();
+    this.audioManager?.pauseAll?.();
+    this.analyticsManager?.trackEvent?.('simulation_paused', { reason: 'tab_hidden' });
   }
 
   /**
    * Resume active simulations (e.g., when tab becomes visible)
    */
   private resumeActiveSimulations(): void {
-    this.deviceSimulator.resumeSimulation();
-    this.crisisSystem.resumeMonitoring();
-    this.audioManager.resumeAll();
-    this.analyticsManager.trackEvent('simulation_resumed', { reason: 'tab_visible' });
+    this.deviceSimulator?.resumeSimulation?.();
+    this.crisisSystem?.resumeMonitoring?.();
+    this.audioManager?.resumeAll?.();
+    this.analyticsManager?.trackEvent?.('simulation_resumed', { reason: 'tab_visible' });
   }
 
   /**
@@ -654,9 +673,13 @@ export class GameIntegrationSystem {
       handle: (error, context) => {
         console.log('Handling simulation error:', error.message);
         
-        // Pause simulation and enable safe mode
-        this.deviceSimulator.pauseSimulation();
-        this.deviceSimulator.enableSafeMode();
+        try {
+          // Pause simulation and enable safe mode
+          this.deviceSimulator?.pauseSimulation?.();
+          this.deviceSimulator?.enableSafeMode?.();
+        } catch (handlerError) {
+          console.warn('Failed to pause simulation during error handling:', handlerError);
+        }
         
         return {
           handled: true,
@@ -767,6 +790,8 @@ export class GameIntegrationSystem {
     return {
       gameRenderer: this.gameRenderer,
       inputManager: this.inputManager,
+      saveManager: this.saveManager,
+      analyticsManager: this.analyticsManager,
       deviceSimulator: this.deviceSimulator,
       tutorialManager: this.tutorialManager,
       scenarioEngine: this.scenarioEngine,
@@ -866,14 +891,42 @@ export class GameIntegrationSystem {
       console.log('Shutting down game systems...');
       
       // Save current state before shutdown
-      await this.saveCurrentGame();
+      try {
+        await this.saveCurrentGame();
+      } catch (error) {
+        console.warn('Failed to save game during shutdown:', error);
+      }
       
       // Shutdown individual systems
-      this.deviceSimulator?.shutdown();
-      this.gameRenderer?.dispose();
-      this.inputManager?.dispose();
-      this.audioManager?.dispose();
-      this.visualEffectsManager?.dispose();
+      try {
+        this.deviceSimulator?.shutdown?.();
+      } catch (error) {
+        console.warn('Failed to shutdown device simulator:', error);
+      }
+      
+      try {
+        this.gameRenderer?.dispose?.();
+      } catch (error) {
+        console.warn('Failed to dispose game renderer:', error);
+      }
+      
+      try {
+        this.inputManager?.dispose?.();
+      } catch (error) {
+        console.warn('Failed to dispose input manager:', error);
+      }
+      
+      try {
+        this.audioManager?.dispose?.();
+      } catch (error) {
+        console.warn('Failed to dispose audio manager:', error);
+      }
+      
+      try {
+        this.visualEffectsManager?.dispose?.();
+      } catch (error) {
+        console.warn('Failed to dispose visual effects manager:', error);
+      }
       
       // Mark systems as shut down
       this.systemsInitialized = false;

@@ -1,4 +1,4 @@
-import { AccessibilityAudioSystem } from '../../src/audio/AccessibilityAudioSystem.js';
+import { AccessibilityAudioSystem } from '../../src/audio/AccessibilityAudioSystem';
 import { AccessibilityOptions, NavigationDirection, AudioContext as GameAudioContext } from '../../src/types/audio.js';
 
 // Mock Web Audio API

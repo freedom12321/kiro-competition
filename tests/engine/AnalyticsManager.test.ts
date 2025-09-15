@@ -55,9 +55,12 @@ describe('AnalyticsManager', () => {
       ...createDefaultAnalyticsConfig(),
       endpoint: 'https://analytics.example.com/events',
       apiKey: 'test-api-key',
-      flushInterval: 100 // Short interval for testing
+      flushInterval: 100, // Short interval for testing
+      enabled: false // Disable to prevent session_start event
     };
     analyticsManager = new AnalyticsManager(mockConfig);
+    // Re-enable after construction to avoid session_start event
+    analyticsManager.updateConfig({ enabled: true });
   });
 
   afterEach(() => {
@@ -88,13 +91,15 @@ describe('AnalyticsManager', () => {
 
   describe('Event Tracking', () => {
     it('should track basic events', () => {
+      const initialCount = analyticsManager.getSessionSummary().eventsCount;
       analyticsManager.trackEvent('test_event', 'gameplay', { value: 123 });
       
       const summary = analyticsManager.getSessionSummary();
-      expect(summary.eventsCount).toBe(1);
+      expect(summary.eventsCount).toBe(initialCount + 1);
     });
 
     it('should track player behavior', () => {
+      const initialCount = analyticsManager.getSessionSummary().eventsCount;
       const behaviorData = {
         sessionDuration: 300000,
         devicesCreated: 5,
@@ -109,7 +114,7 @@ describe('AnalyticsManager', () => {
       analyticsManager.trackPlayerBehavior(behaviorData);
       
       const summary = analyticsManager.getSessionSummary();
-      expect(summary.eventsCount).toBe(1);
+      expect(summary.eventsCount).toBe(initialCount + 1);
     });
 
     it('should track learning effectiveness', () => {

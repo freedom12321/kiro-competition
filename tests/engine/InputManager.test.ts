@@ -1,6 +1,57 @@
 import { InputManager } from '@/engine/InputManager';
 import { DragResult, InteractionResult, ClickResult } from '@/types/core';
 
+// Mock THREE.js
+const mockTHREE = {
+  OrthographicCamera: jest.fn().mockImplementation(() => ({})),
+  WebGLRenderer: jest.fn().mockImplementation(() => ({
+    domElement: document.createElement('canvas'),
+    dispose: jest.fn()
+  })),
+  Raycaster: jest.fn().mockImplementation(() => ({
+    setFromCamera: jest.fn(),
+    intersectObjects: jest.fn().mockReturnValue([])
+  })),
+  Vector2: jest.fn().mockImplementation(() => ({ x: 0, y: 0 })),
+  Mesh: jest.fn().mockImplementation(() => ({
+    position: { 
+      x: 0, y: 0, z: 0,
+      set: jest.fn()
+    },
+    rotation: { 
+      x: 0, y: 0, z: 0,
+      set: jest.fn()
+    },
+    scale: { 
+      x: 1, y: 1, z: 1,
+      set: jest.fn()
+    }
+  })),
+  Box3: jest.fn().mockImplementation(() => ({
+    min: { x: 0, y: 0, z: 0 },
+    max: { x: 1, y: 1, z: 1 },
+    containsPoint: jest.fn().mockReturnValue(true)
+  }))
+};
+
+(window as any).THREE = mockTHREE;
+
+// Mock Touch constructor
+(global as any).Touch = jest.fn().mockImplementation((init) => ({
+  identifier: init.identifier,
+  target: init.target,
+  clientX: init.clientX,
+  clientY: init.clientY,
+  pageX: init.clientX,
+  pageY: init.clientY,
+  screenX: init.clientX,
+  screenY: init.clientY,
+  radiusX: 1,
+  radiusY: 1,
+  rotationAngle: 0,
+  force: 1
+}));
+
 describe('InputManager', () => {
   let container: HTMLElement;
   let inputManager: InputManager;

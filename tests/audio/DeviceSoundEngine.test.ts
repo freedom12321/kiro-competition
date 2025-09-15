@@ -1,4 +1,4 @@
-import { DeviceSoundEngine } from '../../src/audio/DeviceSoundEngine.js';
+import { DeviceSoundEngine } from '../../src/audio/DeviceSoundEngine';
 import { PersonalityTrait, EmotionState, CrisisType } from '../../src/types/core.js';
 import { InteractionType, AudioContext as GameAudioContext } from '../../src/types/audio.js';
 

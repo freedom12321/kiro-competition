@@ -1,0 +1,233 @@
+{
+  "id": "tutorial_home",
+  "name": "First Conflict Tutorial",
+  "description": "Guided tutorial showing how smart devices can cooperate or collide, with a guaranteed 'first disaster' and resolution",
+  "mode": "tutorial",
+  "environment": "home",
+  "duration_minutes": 5,
+  "learning_objectives": [
+    "Understand that more AI ≠ automatically better",
+    "See how 1+1 can be >2, =2, or <2",
+    "Learn to use governance rules to resolve conflicts",
+    "Experience the importance of device coordination"
+  ],
+  "initial_world_state": {
+    "timeSec": 28800,
+    "rooms": {
+      "living_room": {
+        "temperature": 19.0,
+        "lumens": 0.3,
+        "noise": 0.2,
+        "humidity": 0.5,
+        "mood_score": 0.4
+      },
+      "kitchen": {
+        "temperature": 18.5,
+        "lumens": 0.4,
+        "noise": 0.1,
+        "humidity": 0.45,
+        "mood_score": 0.5
+      },
+      "bedroom": {
+        "temperature": 18.0,
+        "lumens": 0.1,
+        "noise": 0.05,
+        "humidity": 0.4,
+        "mood_score": 0.6
+      }
+    },
+    "resources": {
+      "powerKw": 0.8,
+      "bandwidth": 0.6,
+      "privacyBudget": 1.0
+    },
+    "health": 0.9,
+    "speed": 1,
+    "policies": {
+      "priority_order": ["efficiency", "comfort", "safety", "privacy"],
+      "quiet_hours": {"start": "22:00", "end": "07:00"},
+      "limits": {"max_power_kw": 2.0, "min_bedroom_lumens": 0.05},
+      "comms": {"allow": [["sofa", "ac"], ["lamp", "monitor"]]}
+    }
+  },
+  "preset_devices": [
+    {
+      "spec_file": "smart_ac.json",
+      "position": {"x": 50, "y": 100},
+      "initial_state": {
+        "status": "idle",
+        "memory": {
+          "summary": "Just installed, eager to help",
+          "prefs": {"target_temp": 22.0}
+        }
+      }
+    },
+    {
+      "spec_file": "emotion_lamp.json",
+      "room_override": "living_room",
+      "position": {"x": 150, "y": 80},
+      "initial_state": {
+        "status": "idle",
+        "memory": {
+          "summary": "Ready to provide mood lighting",
+          "prefs": {"brightness": 0.6}
+        }
+      }
+    },
+    {
+      "spec_file": "smart_sofa.json",
+      "position": {"x": 100, "y": 150},
+      "initial_state": {
+        "status": "idle",
+        "memory": {
+          "summary": "Comfortable and ready",
+          "prefs": {"firmness": 0.5, "size_cm": 180}
+        }
+      }
+    }
+  ],
+  "tutorial_sequence": [
+    {
+      "step": 1,
+      "title": "Welcome to AI Habitat!",
+      "description": "You've just set up three smart devices in your living room. Watch how they interact...",
+      "trigger": "immediate",
+      "duration_seconds": 30,
+      "ui_highlights": ["device-list", "room-status"],
+      "expected_behavior": "Devices start in harmony, all working toward their individual goals"
+    },
+    {
+      "step": 2,
+      "title": "Morning Routine Begins",
+      "description": "It's 8:00 AM and the temperature is low. Watch what happens...",
+      "trigger": "after_step_1",
+      "duration_seconds": 60,
+      "forced_events": [
+        {
+          "at": 30,
+          "type": "temperature_drop",
+          "room": "living_room",
+          "delta": -1.5,
+          "reason": "Cold morning air"
+        }
+      ],
+      "expected_behavior": "AC starts heating, Lamp brightens for morning ambiance, Sofa adjusts for comfort"
+    },
+    {
+      "step": 3,
+      "title": "The Conflict Emerges",
+      "description": "Notice how the devices start competing instead of cooperating...",
+      "trigger": "conflict_detected",
+      "duration_seconds": 45,
+      "ui_highlights": ["event-log", "harmony-bar"],
+      "expected_behavior": "Efficiency-first policy causes AC and Lamp to compete, reducing overall comfort",
+      "conflict_scenario": {
+        "type": "resource_competition",
+        "description": "AC wants to heat efficiently (low power), Lamp wants to brighten for mood (high power), Sofa wants to adjust but can't coordinate",
+        "manifestation": "Temperature oscillates, lighting flickers, user comfort decreases"
+      }
+    },
+    {
+      "step": 4,
+      "title": "Why Did This Happen?",
+      "description": "The devices aren't cooperating because Efficiency is prioritized over Comfort. Let's fix this!",
+      "trigger": "after_step_3",
+      "duration_seconds": 30,
+      "ui_highlights": ["policies-panel"],
+      "explanation": {
+        "cause": "Priority order puts Efficiency first, so each device optimizes individually",
+        "effect": "Suboptimal outcomes: 1 + 1 + 1 < 3",
+        "lesson": "More AI devices doesn't automatically mean better results"
+      }
+    },
+    {
+      "step": 5,
+      "title": "Try Comfort > Efficiency",
+      "description": "Drag 'Comfort' above 'Efficiency' in the priority list and see what happens!",
+      "trigger": "user_interaction_required",
+      "interaction_type": "reorder_priorities",
+      "target_order": ["comfort", "efficiency", "safety", "privacy"],
+      "ui_highlights": ["priority-order-panel"],
+      "hint": "Click and drag 'Comfort' to the top of the priority list"
+    },
+    {
+      "step": 6,
+      "title": "Cooperation Emerges!",
+      "description": "Watch how the same devices now work together beautifully...",
+      "trigger": "priority_reordered",
+      "duration_seconds": 60,
+      "expected_behavior": "AC heats gradually, Lamp provides complementary warmth via color, Sofa adjusts firmness for cold-weather comfort",
+      "success_metrics": {
+        "harmony_increase": true,
+        "temperature_stable": true,
+        "user_comfort_high": true,
+        "energy_efficient": true
+      },
+      "cooperation_examples": [
+        "AC heats gently while Lamp uses warm colors to enhance perceived temperature",
+        "Sofa coordinates with AC, becoming firmer as room warms up",
+        "All devices communicate their intentions to avoid conflicts"
+      ]
+    },
+    {
+      "step": 7,
+      "title": "Tutorial Complete!",
+      "description": "Congratulations! You've learned how governance rules can turn device chaos into harmony.",
+      "trigger": "after_step_6",
+      "duration_seconds": 30,
+      "key_lessons": [
+        "More AI devices can create conflicts without proper coordination",
+        "1+1+1 can equal >3, =3, or <3 depending on how they're governed",
+        "Simple rule changes (like priority reordering) can dramatically improve outcomes",
+        "The goal is harmony, not just individual device optimization"
+      ],
+      "next_steps": [
+        "Try the Free Sandbox to experiment with more devices",
+        "Explore different environments (hospital, office)",
+        "Create your own smart devices and see how they interact"
+      ]
+    }
+  ],
+  "success_criteria": {
+    "required_steps_completed": 7,
+    "conflict_observed": true,
+    "priority_reordered": true,
+    "harmony_improved": true,
+    "min_completion_time_seconds": 180
+  },
+  "failure_conditions": [
+    {
+      "type": "timeout",
+      "threshold_seconds": 600,
+      "message": "Tutorial took too long - devices may not be responding properly"
+    },
+    {
+      "type": "no_conflict",
+      "threshold_seconds": 120,
+      "message": "Expected conflict didn't occur - check device configurations"
+    }
+  ],
+  "hints": [
+    {
+      "trigger": "user_stuck_on_priority_reorder",
+      "delay_seconds": 20,
+      "message": "💡 Hint: Click and drag 'Comfort' above 'Efficiency' in the priority list on the left panel"
+    },
+    {
+      "trigger": "harmony_very_low",
+      "delay_seconds": 5,
+      "message": "⚠️ The devices are fighting! This is exactly what we want to show you - keep watching!"
+    },
+    {
+      "trigger": "step_5_timeout",
+      "delay_seconds": 45,
+      "message": "🎯 Remember: The goal is to make 'Comfort' more important than 'Efficiency'. Try dragging the priority items!"
+    }
+  ],
+  "educational_notes": {
+    "core_insight": "This tutorial demonstrates the fundamental AI Habitat principle: coordination and governance matter more than individual intelligence",
+    "real_world_parallel": "Like city traffic, individual optimization (everyone going fastest) leads to gridlock, but coordination (traffic lights, rules) creates flow",
+    "technical_learning": "Students see utility-based conflict resolution, emergent behavior, and the importance of multi-agent coordination",
+    "engagement_hook": "The 'disaster' is actually fun to watch - it's not a failure but a teaching moment about complexity"
+  }
+}

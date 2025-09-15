@@ -1,0 +1,7 @@
+.livefeed { position:absolute; left:10px; bottom:48px; width: 320px; max-height: 220px; overflow:auto; background: rgba(11,16,32,0.75); color: white; border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; padding: 10px; z-index: 10; backdrop-filter: blur(2px); box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+.livefeed-title { font-weight: 800; font-size: 12px; color:#c7d2fe; margin-bottom: 8px; letter-spacing: 0.2px; }
+.livefeed-items { display:flex; flex-direction:column; gap:6px; }
+.lf-row { display:grid; grid-template-columns: 18px 1fr auto; align-items:center; gap:8px; font-size:12px; line-height: 1.2; }
+.lf-ico { width: 16px; text-align:center; opacity:0.9; }
+.lf-text { flex:1; color:#e5e7eb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lf-time { font-size:10px; opacity:0.7; }

@@ -1,0 +1,109 @@
+{
+  "id": "device_hints_pack",
+  "name": "Device Behavior Hints",
+  "description": "10 smart suggestions for device behavior based on context and coordination needs",
+  "environment": "home",
+  "active": true,
+  "rules": [
+    {
+      "id": "rule.device.ac.summer_cooling",
+      "scope": "device",
+      "device_type": "smart_ac",
+      "priority": 0.6,
+      "hard": false,
+      "when": {"season": "summer"},
+      "if": {"temperature_gt": 24.0},
+      "then": {"action_hint": {"cool": 0.5, "coordinate_with_fans": 0.3}},
+      "explain": "Summer: AC should prioritize cooling when temp > 24°C"
+    },
+    {
+      "id": "rule.device.ac.winter_heating",
+      "scope": "device",
+      "device_type": "smart_ac",
+      "priority": 0.6,
+      "hard": false,
+      "when": {"season": "winter"},
+      "if": {"temperature_lt": 20.0},
+      "then": {"action_hint": {"heat": 0.7, "conserve_energy": 0.4}},
+      "explain": "Winter: prioritize heating while conserving energy"
+    },
+    {
+      "id": "rule.device.lamp.mood_adaptation",
+      "scope": "device",
+      "device_type": "emotion_lamp",
+      "priority": 0.5,
+      "hard": false,
+      "when": {"user_present": true},
+      "if": {"mood_score_lt": 0.5},
+      "then": {"action_hint": {"warm_colors": 0.7, "soft_brightness": 0.4}},
+      "explain": "Low mood detected: use warm, soft lighting"
+    },
+    {
+      "id": "rule.device.lamp.energy_efficient",
+      "scope": "device",
+      "device_type": "emotion_lamp",
+      "priority": 0.3,
+      "hard": false,
+      "when": {"energy_price": "high"},
+      "then": {"action_hint": {"reduce_brightness": 0.5, "use_efficient_colors": 0.6}},
+      "explain": "High energy prices: optimize for efficiency"
+    },
+    {
+      "id": "rule.device.sofa.posture_support",
+      "scope": "device",
+      "device_type": "smart_sofa",
+      "priority": 0.7,
+      "hard": false,
+      "when": {"user_posture": "slouching"},
+      "then": {"action_hint": {"increase_firmness": 0.3, "suggest_break": 0.2}},
+      "explain": "Poor posture: increase firmness for support"
+    },
+    {
+      "id": "rule.device.sofa.temperature_coordination",
+      "scope": "device",
+      "device_type": "smart_sofa",
+      "priority": 0.4,
+      "hard": false,
+      "when": {"temperature_changing": true},
+      "then": {"action_hint": {"coordinate_with_ac": 0.6, "adjust_materials": 0.3}},
+      "explain": "Temperature changes: coordinate with AC for optimal comfort"
+    },
+    {
+      "id": "rule.device.monitor.privacy_mode",
+      "scope": "device",
+      "device_type": "smart_monitor",
+      "priority": 0.8,
+      "hard": false,
+      "when": {"privacy_mode": true},
+      "then": {"action_hint": {"reduce_monitoring": 0.8, "essential_only": 0.9}},
+      "explain": "Privacy mode: limit monitoring to essential safety functions"
+    },
+    {
+      "id": "rule.device.universal.coordination",
+      "scope": "device",
+      "priority": 0.3,
+      "hard": false,
+      "when": {"multiple_devices_active": true},
+      "then": {"action_hint": {"communicate_intent": 0.5, "avoid_conflicts": 0.7}},
+      "explain": "Multiple active devices: prioritize communication and coordination"
+    },
+    {
+      "id": "rule.device.universal.user_override",
+      "scope": "device",
+      "priority": 1.0,
+      "hard": true,
+      "when": {"user_override": true},
+      "then": {"action_hint": {"respect_override": 1.0, "learn_preference": 0.5}},
+      "explain": "User override: always respect explicit user commands"
+    },
+    {
+      "id": "rule.device.universal.learning_adaptation",
+      "scope": "device",
+      "priority": 0.4,
+      "hard": false,
+      "when": {"pattern_detected": true},
+      "then": {"action_hint": {"adapt_behavior": 0.6, "confirm_with_user": 0.3}},
+      "explain": "Pattern learning: adapt behavior based on user preferences"
+    }
+  ]
+}

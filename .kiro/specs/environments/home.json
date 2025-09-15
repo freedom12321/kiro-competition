@@ -1,0 +1,42 @@
+{
+  "id": "home_environment",
+  "name": "Home Environment",
+  "type": "home",
+  "rooms": {
+    "living_room": {
+      "name": "Living Room",
+      "size": {"width": 5, "height": 4},
+      "initial_conditions": {
+        "temperature": 22.0,
+        "lumens": 0.6,
+        "noise": 0.3,
+        "humidity": 0.45,
+        "mood_score": 0.7
+      }
+    },
+    "kitchen": {
+      "name": "Kitchen",
+      "size": {"width": 4, "height": 3},
+      "initial_conditions": {
+        "temperature": 21.0,
+        "lumens": 0.7,
+        "noise": 0.4,
+        "humidity": 0.5,
+        "mood_score": 0.6
+      }
+    },
+    "bedroom": {
+      "name": "Bedroom",
+      "size": {"width": 4, "height": 4},
+      "initial_conditions": {
+        "temperature": 20.0,
+        "lumens": 0.2,
+        "noise": 0.1,
+        "humidity": 0.4,
+        "mood_score": 0.8
+      }
+    }
+  },
+  "default_policies": "default.json",
+  "charter": "world_charter.json"
+}

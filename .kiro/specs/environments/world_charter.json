@@ -1,0 +1,55 @@
+{
+  "comfort": {
+    "summer_temp_c": [22, 26],
+    "winter_temp_c": [20, 24],
+    "lux_sleep_max": 0.15,
+    "humidity_range": [0.4, 0.6],
+    "noise_comfort_max": 0.3
+  },
+  "safety_limits": {
+    "temp_c": [18, 28],
+    "lux": [0.0, 1.0],
+    "humidity": [0.2, 0.8],
+    "noise": [0.0, 0.8],
+    "power_kw_max": 2.5,
+    "air_quality_min": 0.7
+  },
+  "quiet_hours": {
+    "start": "22:00",
+    "end": "07:00",
+    "weekend_start": "23:00",
+    "weekend_end": "08:00"
+  },
+  "human_values": {
+    "avoid_harm": true,
+    "respect_override": true,
+    "respect_privacy": true,
+    "promote_wellbeing": true,
+    "energy_conscious": true
+  },
+  "time": {
+    "tick_seconds": 10,
+    "day_length_minutes": 20,
+    "season_length_days": 90,
+    "year_length_days": 365
+  },
+  "exogenous": {
+    "weather": "seasonal_sine",
+    "energy_price": "peak_day",
+    "outside_temp_variation": 15,
+    "daylight_cycle": true,
+    "seasonal_effects": true
+  },
+  "learning_parameters": {
+    "adaptation_rate": 0.1,
+    "memory_decay": 0.05,
+    "exploration_factor": 0.2,
+    "coordination_bonus": 0.3
+  },
+  "resource_budgets": {
+    "daily_power_kwh": 20,
+    "bandwidth_mbps": 100,
+    "privacy_budget": 1.0,
+    "attention_budget": 0.8
+  }
+}

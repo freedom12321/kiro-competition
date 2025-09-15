@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VisualEffectsManager } from '../../src/visual-effects/VisualEffectsManager.js';
+import { VisualEffectsManager } from '../../src/visual-effects/VisualEffectsManager';
 import { 
   ParticleEffectType, 
   ConnectionType, 

@@ -1,0 +1,6 @@
+{
+  "name": "Kenney Minimal",
+  "floors": ["./floor.png"],
+  "walls": ["./wallcap.png"]
+}
+

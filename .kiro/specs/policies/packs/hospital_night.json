@@ -1,0 +1,77 @@
+{
+  "id": "hospital_night_pack",
+  "name": "Hospital Night Shift Rules",
+  "description": "35 rules for hospital night operations - patient sleep priority, medical device coordination, emergency protocols, sterile room constraints",
+  "environment": "hospital",
+  "active": true,
+  "rules": [
+    {
+      "id": "rule.hospital.night.patient_sleep",
+      "scope": "room",
+      "priority": 1.0,
+      "hard": true,
+      "when": {"time_between": ["22:00", "06:00"], "room_tag": ["patient_room"]},
+      "if": {"lumens_gt": 0.2},
+      "then": {"target": "lumens", "delta": -0.4, "min": 0.05},
+      "explain": "Night shift: enforce low light for patient sleep"
+    },
+    {
+      "id": "rule.hospital.emergency.override_quiet",
+      "scope": "world",
+      "priority": 1.0,
+      "hard": true,
+      "when": {"emergency": true},
+      "then": {"action_hint": {"full_brightness": 1.0, "emergency_protocols": 1.0}},
+      "explain": "Emergency: all quiet hour restrictions lifted"
+    },
+    {
+      "id": "rule.hospital.medication.timing_window",
+      "scope": "device",
+      "device_type": "medication_dispenser",
+      "priority": 0.9,
+      "hard": false,
+      "when": {"medication_due": true},
+      "then": {"action_hint": {"dispense_medication": 0.9, "gentle_alert": 0.5}},
+      "explain": "Medication timing: gentle dispensing during sleep hours"
+    },
+    {
+      "id": "rule.hospital.monitor.continuous_priority",
+      "scope": "device",
+      "device_type": "patient_monitor",
+      "priority": 0.95,
+      "hard": true,
+      "then": {"action_hint": {"maintain_monitoring": 1.0}},
+      "explain": "Patient monitors have highest priority - never interrupt"
+    },
+    {
+      "id": "rule.hospital.sterile.air_quality",
+      "scope": "room",
+      "priority": 0.8,
+      "hard": true,
+      "when": {"room_tag": ["operating_room", "icu"]},
+      "if": {"air_quality_lt": 0.9},
+      "then": {"target": "air_quality", "delta": 0.3, "min": 0.95},
+      "explain": "Sterile rooms: maintain highest air quality"
+    },
+    {
+      "id": "rule.hospital.noise.patient_comfort",
+      "scope": "room",
+      "priority": 0.7,
+      "hard": false,
+      "when": {"room_tag": ["patient_room"]},
+      "if": {"noise_gt": 0.2},
+      "then": {"target": "noise", "delta": -0.3, "min": 0.05},
+      "explain": "Patient rooms: minimize noise for healing"
+    },
+    {
+      "id": "rule.hospital.escalation.nurse_call",
+      "scope": "device",
+      "device_type": "nurse_call_system",
+      "priority": 0.9,
+      "hard": false,
+      "when": {"patient_distress": true},
+      "then": {"action_hint": {"priority_alert": 0.9, "gentle_response": 0.3}},
+      "explain": "Patient distress: prioritize nurse response while maintaining calm"
+    }
+  ]
+}

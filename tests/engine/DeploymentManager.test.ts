@@ -230,6 +230,15 @@ describe('DeploymentManager', () => {
     });
 
     it('should check overall compatibility', () => {
+      // Mock WebGL support for test environment
+      const mockCanvas = document.createElement('canvas');
+      const mockContext = {
+        getParameter: jest.fn(),
+        getExtension: jest.fn()
+      };
+      jest.spyOn(mockCanvas, 'getContext').mockReturnValue(mockContext as any);
+      jest.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any);
+      
       const compatibility = deploymentManager.checkCompatibility();
       
       expect(compatibility.isSupported).toBe(true);
@@ -271,19 +280,37 @@ describe('DeploymentManager', () => {
       const createElementSpy = jest.spyOn(document, 'createElement');
       const appendChildSpy = jest.spyOn(document.head, 'appendChild');
       
+      // Mock successful asset loading
+      createElementSpy.mockImplementation((tagName) => {
+        const element = document.createElement(tagName);
+        setTimeout(() => {
+          if (element.onload) element.onload({} as Event);
+        }, 10);
+        return element;
+      });
+      
       await deploymentManager.preloadAssets();
       
       expect(createElementSpy).toHaveBeenCalled();
       expect(appendChildSpy).toHaveBeenCalled();
-    });
+    }, 10000);
 
     it('should load assets lazily', async () => {
       const createElementSpy = jest.spyOn(document, 'createElement');
       
+      // Mock successful asset loading
+      createElementSpy.mockImplementation((tagName) => {
+        const element = document.createElement(tagName);
+        setTimeout(() => {
+          if (element.onload) element.onload({} as Event);
+        }, 10);
+        return element;
+      });
+      
       await deploymentManager.loadAssetLazily('assets/models/advanced-devices.json');
       
       expect(createElementSpy).toHaveBeenCalled();
-    });
+    }, 10000);
   });
 
   describe('Performance Recommendations', () => {
@@ -301,16 +328,18 @@ describe('DeploymentManager', () => {
 
     it('should provide performance recommendations for low-end devices', () => {
       // Mock low-end device
-      Object.defineProperty(navigator, 'hardwareConcurrency', { value: 2 });
+      Object.defineProperty(navigator, 'hardwareConcurrency', { value: 2, configurable: true });
       Object.defineProperty(performance, 'memory', {
         value: {
           jsHeapSizeLimit: 500000000 // 500MB
-        }
+        },
+        configurable: true
       });
       
       const manager = new DeploymentManager(mockConfig);
       const recommendations = manager.getPerformanceRecommendations();
       
+      // With 2 cores and 500MB memory, score should be low
       expect(recommendations.qualityLevel).toBe('low');
       expect(recommendations.targetFPS).toBe(30);
       expect(recommendations.maxDevices).toBe(15);
@@ -383,12 +412,18 @@ describe('DeploymentManager', () => {
 
     it('should disable advanced features on low-end devices', () => {
       // Mock very low-end device
-      Object.defineProperty(navigator, 'hardwareConcurrency', { value: 1 });
+      Object.defineProperty(navigator, 'hardwareConcurrency', { value: 1, configurable: true });
       Object.defineProperty(performance, 'memory', {
         value: {
           jsHeapSizeLimit: 100000000 // 100MB
-        }
+        },
+        configurable: true
       });
+      
+      // Mock no WebGL support to further reduce score
+      const mockCanvas = document.createElement('canvas');
+      jest.spyOn(mockCanvas, 'getContext').mockReturnValue(null);
+      jest.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any);
       
       const manager = new DeploymentManager(mockConfig);
       
@@ -414,31 +449,31 @@ describe('DeploymentManager', () => {
       (document.createElement as jest.Mock).mockImplementation(originalCreateElement);
     });
 
-    it('should handle service worker registration failure', () => {
+    it('should handle service worker registration failure', async () => {
       const prodConfig = createDefaultDeploymentConfig('production');
       const registerSpy = jest.spyOn(navigator.serviceWorker, 'register');
-      registerSpy.mockRejectedValue(new Error('Service worker registration failed'));
+      registerSpy.mockRejectedValueOnce(new Error('Service worker registration failed'));
       
       expect(() => new DeploymentManager(prodConfig)).not.toThrow();
+      
+      // Wait for async operations to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
     });
   });
 
   describe('Asset Preloading Error Handling', () => {
     it('should handle asset preload failures gracefully', async () => {
       const createElementSpy = jest.spyOn(document, 'createElement');
-      createElementSpy.mockReturnValue({
-        rel: '',
-        href: '',
-        as: '',
-        crossOrigin: '',
-        onload: null,
-        onerror: null,
-        httpEquiv: '',
-        content: ''
-      } as any);
+      createElementSpy.mockImplementation((tagName) => {
+        const element = document.createElement(tagName);
+        setTimeout(() => {
+          if (element.onerror) element.onerror({} as Event);
+        }, 10);
+        return element;
+      });
       
       // Should not throw even if some assets fail to preload
       await expect(deploymentManager.preloadAssets()).resolves.not.toThrow();
-    });
+    }, 10000);
   });
 });

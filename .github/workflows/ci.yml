@@ -1,0 +1,222 @@
+name: AI Habitat CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test & Quality Checks
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Type checking
+        run: npx tsc --noEmit
+
+      - name: Lint code
+        run: npx eslint src/ --ext .ts,.tsx --max-warnings 0
+
+      - name: Run tests
+        run: npm test -- --run --reporter=verbose
+
+      - name: Generate coverage report
+        run: npm run test:coverage -- --run --reporter=verbose
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Performance regression test
+        run: npm run test:compatibility
+        continue-on-error: true
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build application
+        run: npm run build
+
+      - name: Analyze bundle size
+        run: npm run build:analyze
+        continue-on-error: true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+          retention-days: 7
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run security audit
+        run: npm audit --audit-level high
+        continue-on-error: true
+
+      - name: Check for vulnerabilities
+        run: npx audit-ci --config audit-ci.json
+        continue-on-error: true
+
+  performance:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+
+      - name: Run performance tests
+        run: |
+          npm run serve:local &
+          SERVER_PID=$!
+          sleep 5
+
+          # Basic performance check
+          curl -w "@-" -o /dev/null -s "http://localhost:8080" << 'EOF'
+             time_namelookup:  %{time_namelookup}\n
+                time_connect:  %{time_connect}\n
+             time_appconnect:  %{time_appconnect}\n
+            time_pretransfer:  %{time_pretransfer}\n
+               time_redirect:  %{time_redirect}\n
+          time_starttransfer:  %{time_starttransfer}\n
+                             ----------\n
+                  time_total:  %{time_total}\n
+          EOF
+
+          kill $SERVER_PID
+        continue-on-error: true
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [test, build, security]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          # Add your staging deployment commands here
+          # npm run deploy:staging
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [test, build, security, performance]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production environment..."
+          # Add your production deployment commands here
+          # npm run deploy:production
+
+  notify:
+    name: Notification
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: always()
+
+    steps:
+      - name: Notify on success
+        if: needs.test.result == 'success' && needs.build.result == 'success'
+        run: |
+          echo "✅ AI Habitat pipeline completed successfully!"
+          echo "Tests passed, build completed, ready for deployment."
+
+      - name: Notify on failure
+        if: needs.test.result == 'failure' || needs.build.result == 'failure'
+        run: |
+          echo "❌ AI Habitat pipeline failed!"
+          echo "Check the logs above for details."
+          exit 1

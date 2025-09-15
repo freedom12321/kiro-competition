@@ -1,0 +1,154 @@
+{
+  "id": "home_base_pack",
+  "name": "Home Base Rules",
+  "description": "Essential rules for home environment comfort and efficiency - 25 rules covering morning ramp-up, meal prep, evening wind-down, quiet hours",
+  "environment": "home",
+  "active": true,
+  "rules": [
+    {
+      "id": "rule.home.morning.bright_living_room",
+      "scope": "room",
+      "priority": 0.6,
+      "hard": false,
+      "when": {"time_between": ["07:00", "09:00"], "room_tag": ["living_room"]},
+      "if": {"lumens_lt": 0.6},
+      "then": {"target": "lumens", "delta": 0.2, "max": 0.8},
+      "explain": "Morning: brighten living room for daily activities"
+    },
+    {
+      "id": "rule.home.breakfast.bright_kitchen",
+      "scope": "room",
+      "priority": 0.5,
+      "hard": false,
+      "when": {"time_between": ["07:00", "09:00"], "room_tag": ["kitchen"]},
+      "if": {"lumens_lt": 0.7},
+      "then": {"target": "lumens", "delta": 0.2, "max": 0.9},
+      "explain": "Breakfast time prefers brighter kitchens"
+    },
+    {
+      "id": "rule.home.quiet_hours.dim_lights",
+      "scope": "room",
+      "priority": 0.8,
+      "hard": false,
+      "when": {"time_between": ["22:00", "07:00"], "room_tag": ["bedroom", "living_room"]},
+      "unless": {"emergency": true},
+      "if": {"lumens_gt": 0.2},
+      "then": {"target": "lumens", "delta": -0.3, "min": 0.05},
+      "explain": "Quiet hours: prefer low light for sleep"
+    },
+    {
+      "id": "rule.home.quiet_hours.reduce_noise",
+      "scope": "room",
+      "priority": 0.7,
+      "hard": false,
+      "when": {"time_between": ["22:00", "07:00"]},
+      "if": {"noise_gt": 0.3},
+      "then": {"target": "noise", "delta": -0.2, "min": 0.1},
+      "explain": "Quiet hours: minimize noise disturbance"
+    },
+    {
+      "id": "rule.home.energy.peak_hours_reduce",
+      "scope": "world",
+      "priority": 0.4,
+      "hard": false,
+      "when": {"time_between": ["18:00", "21:00"], "energy_price": "high"},
+      "then": {"action_hint": {"reduce_power": 0.3}},
+      "explain": "Peak hours: reduce energy consumption"
+    },
+    {
+      "id": "rule.home.comfort.temperature_preference",
+      "scope": "room",
+      "priority": 0.6,
+      "hard": false,
+      "when": {"user_present": true},
+      "if": {"temperature_between": [18, 28]},
+      "then": {"target": "temperature", "delta": 0, "min": 20, "max": 24},
+      "explain": "Maintain comfortable temperature when user present"
+    },
+    {
+      "id": "rule.home.social.visitor_mode",
+      "scope": "world",
+      "priority": 0.7,
+      "hard": false,
+      "when": {"visitor_present": true},
+      "then": {"action_hint": {"enhance_ambiance": 0.5}},
+      "explain": "Visitor present: enhance overall ambiance"
+    },
+    {
+      "id": "rule.home.meal.dinner_ambiance",
+      "scope": "room",
+      "priority": 0.5,
+      "hard": false,
+      "when": {"time_between": ["18:00", "20:00"], "room_tag": ["kitchen", "living_room"]},
+      "if": {"lumens_lt": 0.4},
+      "then": {"target": "lumens", "delta": 0.2, "max": 0.6},
+      "explain": "Dinner time: warm, welcoming lighting"
+    },
+    {
+      "id": "rule.home.evening.wind_down",
+      "scope": "room",
+      "priority": 0.6,
+      "hard": false,
+      "when": {"time_between": ["20:00", "22:00"]},
+      "if": {"lumens_gt": 0.5},
+      "then": {"target": "lumens", "delta": -0.2, "min": 0.3},
+      "explain": "Evening wind-down: gradually dim lights"
+    },
+    {
+      "id": "rule.home.morning.wake_up_sequence",
+      "scope": "room",
+      "priority": 0.7,
+      "hard": false,
+      "when": {"time_between": ["06:30", "08:00"], "room_tag": ["bedroom"]},
+      "if": {"lumens_lt": 0.3},
+      "then": {"target": "lumens", "delta": 0.3, "max": 0.7},
+      "explain": "Wake-up sequence: gradually brighten bedroom"
+    },
+    {
+      "id": "rule.home.comfort.humidity_control",
+      "scope": "room",
+      "priority": 0.4,
+      "hard": false,
+      "if": {"humidity_gt": 0.7},
+      "then": {"target": "humidity", "delta": -0.2, "min": 0.4, "max": 0.6},
+      "explain": "Maintain comfortable humidity levels"
+    },
+    {
+      "id": "rule.home.energy.lunch_efficiency",
+      "scope": "room",
+      "priority": 0.3,
+      "hard": false,
+      "when": {"time_between": ["12:00", "14:00"], "room_tag": ["kitchen"]},
+      "then": {"action_hint": {"efficient_cooking": 0.4}},
+      "explain": "Lunch time: prioritize energy efficiency in kitchen"
+    },
+    {
+      "id": "rule.home.weekend.relaxed_schedule",
+      "scope": "world",
+      "priority": 0.3,
+      "hard": false,
+      "when": {"day_type": "weekend"},
+      "then": {"action_hint": {"relaxed_timing": 0.6}},
+      "explain": "Weekend: allow more flexible timing"
+    },
+    {
+      "id": "rule.home.weather.cloudy_brighten",
+      "scope": "room",
+      "priority": 0.4,
+      "hard": false,
+      "when": {"weather": "cloudy"},
+      "if": {"lumens_lt": 0.5},
+      "then": {"target": "lumens", "delta": 0.2},
+      "explain": "Cloudy weather: compensate with brighter indoor lighting"
+    },
+    {
+      "id": "rule.home.exercise.ventilation",
+      "scope": "room",
+      "priority": 0.5,
+      "hard": false,
+      "when": {"activity": "exercise"},
+      "then": {"action_hint": {"increase_ventilation": 0.8}},
+      "explain": "Exercise time: increase air circulation"
+    }
+  ]
+}

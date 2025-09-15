@@ -68,8 +68,8 @@ export class RuleEnforcementVisualizer {
   private activeRules: Set<string> = new Set();
   private constitutionalRules: Set<string> = new Set();
   private updateInterval: number | null = null;
-  private onViolationDetected?: (violation: RuleViolation) => void;
-  private onEnforcementAction?: (enforcement: RuleEnforcement) => void;
+  private onViolationDetectedCallback?: (violation: RuleViolation) => void;
+  private onEnforcementActionCallback?: (enforcement: RuleEnforcement) => void;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -481,8 +481,8 @@ export class RuleEnforcementVisualizer {
     this.addEnforcement(enforcement);
     this.removeViolation(violationId);
 
-    if (this.onEnforcementAction) {
-      this.onEnforcementAction(enforcement);
+    if (this.onEnforcementActionCallback) {
+      this.onEnforcementActionCallback(enforcement);
     }
   }
 
@@ -572,17 +572,21 @@ export class RuleEnforcementVisualizer {
     if (this.enforcements.length > 100) {
       this.enforcements = this.enforcements.slice(-100);
     }
+    this.updateEnforcementFeed();
+    this.updateStats();
   }
 
   private addViolation(violation: RuleViolation): void {
     this.violations.push(violation);
-    if (this.onViolationDetected) {
-      this.onViolationDetected(violation);
+    if (this.onViolationDetectedCallback) {
+      this.onViolationDetectedCallback(violation);
     }
+    this.updateViolationsDisplay();
   }
 
   private removeViolation(violationId: string): void {
     this.violations = this.violations.filter(v => v.id !== violationId);
+    this.updateViolationsDisplay();
   }
 
   // Public API
@@ -634,11 +638,11 @@ export class RuleEnforcementVisualizer {
   }
 
   public onViolationDetected(callback: (violation: RuleViolation) => void): void {
-    this.onViolationDetected = callback;
+    this.onViolationDetectedCallback = callback;
   }
 
   public onEnforcementAction(callback: (enforcement: RuleEnforcement) => void): void {
-    this.onEnforcementAction = callback;
+    this.onEnforcementActionCallback = callback;
   }
 
   public destroy(): void {

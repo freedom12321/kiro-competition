@@ -1,19 +1,25 @@
 import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
 export default defineConfig({
+  plugins: [react()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
-      '@/types': resolve(__dirname, 'src/types'),
-      '@/engine': resolve(__dirname, 'src/engine'),
+      '@/app': resolve(__dirname, 'src/app'),
       '@/ui': resolve(__dirname, 'src/ui'),
-      '@/simulation': resolve(__dirname, 'src/simulation')
+      '@/view': resolve(__dirname, 'src/view'),
+      '@/sim': resolve(__dirname, 'src/sim'),
+      '@/agents': resolve(__dirname, 'src/agents'),
+      '@/policies': resolve(__dirname, 'src/policies'),
+      '@/scenarios': resolve(__dirname, 'src/scenarios'),
+      '@/types': resolve(__dirname, 'src/types')
     }
   },
   server: {
     port: 3000,
-    open: true
+    open: '/#/'
   },
   build: {
     target: 'esnext',

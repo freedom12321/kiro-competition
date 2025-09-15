@@ -1,0 +1,59 @@
+{
+  "type": "map",
+  "version": "1.10",
+  "tiledversion": "1.10.2",
+  "orientation": "isometric",
+  "renderorder": "right-down",
+  "width": 40,
+  "height": 30,
+  "tilewidth": 64,
+  "tileheight": 32,
+  "infinite": false,
+  "layers": [
+    {
+      "type": "objectgroup",
+      "name": "rooms",
+      "visible": true,
+      "opacity": 1,
+      "objects": [
+        { "id": 1, "name": "living_room", "type": "room", "x": 0,   "y": 0,   "width": 1200, "height": 300 },
+        { "id": 2, "name": "kitchen",     "type": "room", "x": 0,   "y": 300, "width": 1200, "height": 300 },
+        { "id": 3, "name": "bedroom",     "type": "room", "x": 0,   "y": 600, "width": 1200, "height": 300 }
+      ]
+    },
+    {
+      "type": "objectgroup",
+      "name": "props",
+      "visible": true,
+      "opacity": 1,
+      "objects": [
+        { "id": 10, "name": "sofa1",   "type": "sofa",   "x": 220, "y": 140, "width": 100, "height": 40, "properties": [{"name":"room","type":"string","value":"living_room"}] },
+        { "id": 11, "name": "lamp1",   "type": "lamp",   "x": 420, "y": 120, "width": 40,  "height": 40, "properties": [{"name":"room","type":"string","value":"living_room"}] },
+        { "id": 12, "name": "ac1",     "type": "ac",     "x": 100, "y": 80,  "width": 60,  "height": 40, "properties": [{"name":"room","type":"string","value":"living_room"}] },
+        { "id": 13, "name": "tv1",     "type": "tv",     "x": 260, "y": 420, "width": 100, "height": 40, "properties": [{"name":"room","type":"string","value":"kitchen"}] },
+        { "id": 14, "name": "speaker1","type": "speaker","x": 480, "y": 420, "width": 40,  "height": 40, "properties": [{"name":"room","type":"string","value":"kitchen"}] },
+        { "id": 15, "name": "plant1",  "type": "plant",  "x": 160, "y": 720, "width": 40,  "height": 40, "properties": [{"name":"room","type":"string","value":"bedroom"}] }
+      ]
+    },
+    {
+      "type": "objectgroup",
+      "name": "doors",
+      "visible": true,
+      "opacity": 1,
+      "objects": [
+        { "id": 30, "name": "door_living_kitchen", "type": "door", "x": 600, "y": 300, "width": 20, "height": 10,
+          "properties": [
+            {"name": "from", "type": "string", "value": "living_room"},
+            {"name": "to",   "type": "string", "value": "kitchen"}
+          ]
+        },
+        { "id": 31, "name": "door_kitchen_bedroom", "type": "door", "x": 600, "y": 600, "width": 20, "height": 10,
+          "properties": [
+            {"name": "from", "type": "string", "value": "kitchen"},
+            {"name": "to",   "type": "string", "value": "bedroom"}
+          ]
+        }
+      ]
+    }
+  ]
+}

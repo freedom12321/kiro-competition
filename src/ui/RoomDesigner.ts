@@ -1018,7 +1018,7 @@ export class RoomDesigner {
     return this.placementMode;
   }
 
-  public showPlacementFeedback(position: Vector2, device: DeviceTemplate): PlacementFeedback {
+  public getPlacementFeedbackForPosition(position: Vector2, device: DeviceTemplate): PlacementFeedback {
     const gridPos = this.screenToGrid(position);
     return this.getPlacementFeedback(gridPos, device);
   }

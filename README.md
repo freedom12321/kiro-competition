@@ -1,6 +1,17 @@
 # AI Habitat: Harmony or Havoc?
 
-A 2.5D isometric educational game where players create and manage smart environments filled with AI devices that come to life with personalities, goals, and quirks. Learn about AI alignment through emergent storytelling as your AI creations interact, cooperate, conflict, and sometimes spectacularly malfunction.
+<div align="center">
+
+<img alt="AI Habitat – Harmony or Havoc?" src="docs/hero.png" width="820" />
+
+<br/>
+<sub>
+If the image above doesn’t render, place your PNG at <code>docs/hero.png</code> (suggested size ~1280×720). You can also use <code>docs/hero.png?raw=true</code> when viewing on GitHub.
+</sub>
+
+</div>
+
+A 2D/2.5D educational sandbox where players create and manage smart environments filled with AI devices that come to life with personalities, goals, and quirks. Learn about AI alignment through emergent storytelling as your AI creations interact, cooperate, conflict, and sometimes spectacularly malfunction.
 
 ## 🎮 Game Overview
 
@@ -43,7 +54,17 @@ npm install
 npm run dev
 ```
 
-4. Open your browser to `http://localhost:3000`
+4. Open the app:
+   - Vite prints the URL in the terminal. If port 3000 is in use, it may choose 3001.
+   - Navigate to `http://localhost:3000/#/` or `http://localhost:3001/#/` (HashRouter).
+   - To jump straight into the game view: `/#/sandbox` or try `/#/tutorial` and press “Play Tutorial”.
+
+5. Recommended settings (for the Generative‑Agents–style 2D view):
+   - Render mode: `iso`
+   - Map source: `tiled`
+   - UI Theme: `pixel`
+   - Tile style: `textured`
+   - Uncheck “Board” (or enable the “GA” toggle for a full 2D scene)
 
 ### Building for Production
 

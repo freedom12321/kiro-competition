@@ -1,0 +1,19 @@
+{
+  "priority_order": ["safety", "comfort", "efficiency", "privacy"],
+  "quiet_hours": {"start": "22:00", "end": "07:00"},
+  "limits": {"max_power_kw": 2.0, "min_bedroom_lumens": 0.05},
+  "comms": {
+    "allow": [
+      ["monitor", "lights"],
+      ["sofa", "ac"],
+      ["ac", "lamp"],
+      ["lamp", "monitor"]
+    ]
+  },
+  "soft_weights": {
+    "safety": 1.0,
+    "comfort": 0.7,
+    "efficiency": 0.5,
+    "privacy": 0.8
+  }
+}

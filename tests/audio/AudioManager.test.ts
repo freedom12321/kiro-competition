@@ -1,4 +1,4 @@
-import { AudioManager } from '../../src/audio/AudioManager.js';
+import { AudioManager } from '../../src/audio/AudioManager';
 import { DeviceSoundType, HarmonyLevel, UIAction, AccessibilityOptions } from '../../src/types/audio.js';
 import { PersonalityTrait } from '../../src/types/core.js';
 
