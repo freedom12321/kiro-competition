@@ -4,12 +4,7 @@
 
 <img alt="AI Habitat – Harmony or Havoc?" src="docs/hero.png" width="820" />
 
-<br/>
-<sub>
-If the image above doesn’t render, place your PNG at <code>docs/hero.png</code> (suggested size ~1280×720). You can also use <code>docs/hero.png?raw=true</code> when viewing on GitHub.
-</sub>
 
-</div>
 
 A 2D/2.5D educational sandbox where players create and manage smart environments filled with AI devices that come to life with personalities, goals, and quirks. Learn about AI alignment through emergent storytelling as your AI creations interact, cooperate, conflict, and sometimes spectacularly malfunction.
 
