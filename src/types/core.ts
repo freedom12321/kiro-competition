@@ -53,6 +53,16 @@ export type DeviceRuntime = {
   defaults?: Record<string, any>;
 };
 
+// Simple person runtime (pixel-animated resident)
+export type PersonRuntime = {
+  id: string;
+  name: string;
+  room: RoomId;
+  x: number;
+  y: number;
+  sprite?: string; // path to 3x4 sheet (defaults to isabella)
+};
+
 // World Rules System (WORLDRULE.md compliant)
 export type Pred = Record<string, any>;
 export type Transform = {
@@ -126,6 +136,7 @@ export type WorldState = {
   timeSec: number;
   rooms: Record<RoomId, RoomState>;
   devices: Record<string, DeviceRuntime>;
+  people?: Record<string, PersonRuntime>;
   policies: Policies;
   resources: { powerKw: number; bandwidth: number; privacyBudget: number };
   health: number; // 0..1 harmony

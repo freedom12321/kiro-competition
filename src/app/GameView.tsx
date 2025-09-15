@@ -18,6 +18,7 @@ import SmartHomeBoard from '@/ui/SmartHomeBoard';
 import DeviceIconSidebar from '@/ui/DeviceIconSidebar';
 import LiveFeed from '@/ui/LiveFeed';
 import ConversationPanel from '@/ui/ConversationPanel';
+import DeviceFallbackOverlay from '@/ui/DeviceFallbackOverlay';
 
 interface GameViewProps {
   mode: 'tutorial' | 'sandbox';
@@ -26,6 +27,7 @@ interface GameViewProps {
 const GameView: React.FC<GameViewProps> = ({ mode }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const worldStore = useWorldStore();
+  const addPerson = useWorldStore(s => (s as any).addPerson);
   const [showDeviceCreation, setShowDeviceCreation] = useState(false);
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
   const [activeLessons, setActiveLessons] = useState<Lesson[]>([]);
@@ -38,7 +40,7 @@ const GameView: React.FC<GameViewProps> = ({ mode }) => {
   const [simMode, setSimMode] = useState(worldStore.mode);
   const [renderMode, setRenderMode] = useState<'flat'|'iso'>('iso');
   const [mapSource, setMapSource] = useState<'procedural'|'tiled'>('tiled');
-  const [tileStyle, setTileStyle] = useState<'vector'|'textured'>('textured');
+  const [tileStyle, setTileStyle] = useState<'vector'|'textured'>('vector');
   const [uiTheme, setUiTheme] = useState<'classic'|'pixel'>('pixel');
   const [snapRoam, setSnapRoam] = useState<boolean>(true);
   const [boardMode, setBoardMode] = useState<boolean>(true);
@@ -65,6 +67,7 @@ const GameView: React.FC<GameViewProps> = ({ mode }) => {
 
   const sceneRef = useRef<PixiScene | null>(null);
   const [selected, setSelected] = useState<{ type: 'all'|'human'|'device', id?: string }>({ type:'all' });
+  const [pixiReady, setPixiReady] = useState(false);
 
   useEffect(() => {
     // Initialize Pixi.js application when canvas is ready
@@ -72,16 +75,19 @@ const GameView: React.FC<GameViewProps> = ({ mode }) => {
       const scene = new PixiScene();
       sceneRef.current = scene;
       scene.init(canvasRef.current, 800, 600).then(() => {
-        scene.update(worldStore);
-        // Center view on first render for visibility
-        scene.center?.();
-      });
+        if (sceneRef.current) {
+          setPixiReady(true);
+          scene.update(worldStore);
+          scene.center?.();
+        }
+      }).catch(() => setPixiReady(false));
       scene.setOnSelect((sel) => {
         if (sel.type === 'human') setSelected({ type: 'human' });
         if (sel.type === 'device') setSelected({ type: 'device', id: sel.id });
       });
     }
     return () => {
+      setPixiReady(false);
       sceneRef.current?.destroy();
       sceneRef.current = null;
     };
@@ -98,6 +104,7 @@ const GameView: React.FC<GameViewProps> = ({ mode }) => {
       scene.setTiledMap(map);
     }
     scene.update(worldStore);
+    scene.center?.();
   }, [worldStore.eventLog.length, Object.keys(worldStore.devices).length, worldStore.timeSec, mapKey]);
 
   // Rebuild scene when render options change
@@ -112,6 +119,7 @@ const GameView: React.FC<GameViewProps> = ({ mode }) => {
       scene.setTiledMap(map);
     }
     scene.update(worldStore);
+    scene.center?.();
   }, [renderMode, mapSource, tileStyle, snapRoam, mapKey]);
 
   // Auto-hide the Board once when pixel theme is selected so the 2D scene is visible
@@ -385,9 +393,9 @@ const GameView: React.FC<GameViewProps> = ({ mode }) => {
           <DeviceIconSidebar />
         </div>
 
-        <div className="device-controls">
-          <h3>Devices</h3>
-          {mode === 'tutorial' && (
+          <div className="device-controls">
+            <h3>Devices</h3>
+            {mode === 'tutorial' && (
               <button
                 onClick={handleLoadTutorial}
                 className="tutorial-button"
@@ -426,6 +434,18 @@ const GameView: React.FC<GameViewProps> = ({ mode }) => {
                 ))
               )}
             </div>
+          <div style={{ marginTop: 16 }}>
+            <h3>Residents</h3>
+            <button
+              onClick={() => {
+                const id = 'person.isabella.' + Date.now();
+                addPerson({ id, name: 'Isabella', room: 'living_room', x: 80, y: 120, sprite: '/assets/characters/isabella.png' } as any);
+              }}
+              className="create-device-button"
+            >
+              ➕ Add Isabella
+            </button>
+          </div>
           </div>
 
           <div className="test-controls">
@@ -452,6 +472,15 @@ const GameView: React.FC<GameViewProps> = ({ mode }) => {
               🧑 Human: {humanRoom.replace('_', ' ')}
             </div>
           </div>
+          {/* Always render lightweight DOM icons so devices are visible
+              even if WebGL has trouble. Overlay is pointer-events:none. */}
+          <DeviceFallbackOverlay
+            visible={
+              !pixiReady ||
+              (typeof window !== 'undefined' && (window as any).__aihab_showOverlay) ||
+              Object.keys(worldStore.devices).length > 0
+            }
+          />
           <LiveFeed />
           {boardMode && (
             <SmartHomeBoard visible={true} />
@@ -498,9 +527,9 @@ const GameView: React.FC<GameViewProps> = ({ mode }) => {
       )}
 
       {/* Lesson Tooltips */}
-      {activeLessons.map(lesson => (
+      {activeLessons.map((lesson, idx) => (
         <LessonTooltip
-          key={lesson.id}
+          key={`${lesson.id}-${idx}`}
           message={lesson.message}
           type={lesson.type}
           position={lesson.position}

@@ -36,7 +36,7 @@ export const wallCapDataURI = (() => {
 
 // Attempt to load external PNG tileset (e.g., Kenney) if present under ./kenney/
 // Returns { floor?: Texture, wallCap?: Texture } with fallbacks to embedded SVG textures.
-import { Texture } from 'pixi.js';
+import { Texture, Assets } from 'pixi.js';
 
 export async function loadExternalTileset(): Promise<{ floor: Texture; wallCap: Texture }> {
   try {
@@ -59,12 +59,12 @@ export async function loadExternalTileset(): Promise<{ floor: Texture; wallCap: 
       if (!floorUrl && key.includes('floor')) floorUrl = url;
       if (!wallUrl && (key.includes('wall') || key.includes('cap'))) wallUrl = url;
     }
-    const floor = await Texture.fromURL(floorFromCfg || floorUrl || floorTileDataURI);
-    const wallCap = await Texture.fromURL(wallFromCfg || wallUrl || wallCapDataURI);
+    const floor = await Assets.load(floorFromCfg || floorUrl || floorTileDataURI) as Texture;
+    const wallCap = await Assets.load(wallFromCfg || wallUrl || wallCapDataURI) as Texture;
     return { floor, wallCap };
   } catch {
-    const floor = await Texture.fromURL(floorTileDataURI);
-    const wallCap = await Texture.fromURL(wallCapDataURI);
+    const floor = await Assets.load(floorTileDataURI) as Texture;
+    const wallCap = await Assets.load(wallCapDataURI) as Texture;
     return { floor, wallCap };
   }
 }

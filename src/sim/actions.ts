@@ -263,6 +263,7 @@ function applyFurnitureAction(
   args: Record<string, any>
 ): void {
   const room = world.rooms[device.room];
+  if (!device.defaults) device.defaults = {} as any;
 
   if (actionName === 'set_firmness') {
     const firmness = Math.max(0, Math.min(1, args.level_0_1 || args.firmness || 0.5));
@@ -301,6 +302,7 @@ function applyColorAction(
   args: Record<string, any>
 ): void {
   const color = args.hex || args.color || '#FFFFFF';
+  if (!device.defaults) device.defaults = {} as any;
   device.defaults.color = color;
 
   // Color can subtly affect mood
@@ -324,6 +326,7 @@ function applyFanAction(
   args: Record<string, any>
 ): void {
   const fanSpeed = Math.max(0, Math.min(1, args.speed_0_1 || args.speed || 0.5));
+  if (!device.defaults) device.defaults = {} as any;
   device.defaults.fanSpeed = fanSpeed;
 
   // Fan affects air circulation and thus temperature slightly

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { WorldState, RoomId, VariableName, WorldEvent, DeviceRuntime, RulePack } from '../types/core';
+import { WorldState, RoomId, VariableName, WorldEvent, DeviceRuntime, RulePack, PersonRuntime } from '../types/core';
 // Bundled policy packs
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -61,6 +61,8 @@ interface WorldStoreActions {
   adjustVariable: (room: RoomId, variable: VariableName, delta: number) => void;
   addDevice: (device: DeviceRuntime) => void;
   removeDevice: (deviceId: string) => void;
+  addPerson: (p: PersonRuntime) => void;
+  removePerson: (id: string) => void;
   reset: () => void;
   setRulePackActive: (packId: string, active: boolean) => void;
   toggleRuleActive: (packId: string, ruleId: string) => void;
@@ -104,6 +106,7 @@ const createInitialState = (): WorldState => ({
   timeSec: 0,
   rooms: initialRooms,
   devices: {},
+  people: {},
   policies: (() => {
     const packs = [homePack as RulePack, hospitalPack as RulePack, deviceHintsPack as RulePack];
     applySavedRulesToPacks(packs, loadSavedRules());
@@ -311,6 +314,29 @@ export const useWorldStore = create<WorldStore>()(
           kind: 'device_added',
           data: { name: device.spec.name }
         });
+      });
+    },
+
+    addPerson: (p) => {
+      set((state) => {
+        if (!state.people) state.people = {} as any;
+        state.people[p.id] = p;
+        state.eventLog.push({
+          at: state.timeSec,
+          room: p.room,
+          kind: 'person_added',
+          data: { name: p.name, sprite: p.sprite }
+        });
+      });
+    },
+
+    removePerson: (id) => {
+      set((state) => {
+        if (state.people && state.people[id]) {
+          const r = state.people[id].room;
+          delete state.people[id];
+          state.eventLog.push({ at: state.timeSec, room: r, kind: 'person_removed', data: { id } });
+        }
       });
     },
 

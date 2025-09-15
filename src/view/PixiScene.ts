@@ -1,5 +1,6 @@
-import { Application, Container, Graphics, Text, TextStyle, Sprite, Texture, Rectangle, AnimatedSprite } from 'pixi.js';
+import { Application, Container, Graphics, Text, TextStyle, Sprite, Texture, Rectangle, AnimatedSprite, Assets } from 'pixi.js';
 import { WorldState, DeviceRuntime } from '@/types/core';
+import { getDeviceIcon } from '@/sim/deviceLoader';
 import { floorTileDataURI, wallCapDataURI, loadExternalTileset } from '@/view/tiles/tileset';
 
 export class PixiScene {
@@ -33,40 +34,58 @@ export class PixiScene {
   private wallCapTexture: Texture | null = null;
   private transientLayer: Container | null = null;
   private onSelect: ((sel: { type: 'device'|'human'; id?: string }) => void) | null = null;
+  private personLayers: Record<string, { layer: Container; anim?: AnimatedSprite; label?: Text }> = {};
   private bubbleTexture: Texture | null = null;
   private humanAnim: AnimatedSprite | null = null;
   private humanBase: any | null = null;
   private humanAtlas: any | null = null;
   private gaTilesBase: any | null = null;
   private gaFloorTile: Texture | null = null;
+  private humanLabel: Text | null = null;
+  // Per-person sprite caches (3x4 sheets)
+  private personSpriteCache: Record<string, { up: Texture[]; down: Texture[]; left: Texture[]; right: Texture[] }> = {};
+  private personSpriteLoading: Record<string, Promise<void>> = {};
 
   async init(canvas: HTMLCanvasElement, width = 800, height = 600): Promise<void> {
-    this.app = new Application();
-    await this.app.init({ canvas, width, height, background: '#0b1020', antialias: false, resolution: Math.min(1.5, window.devicePixelRatio || 1) });
-    this.root = this.app.stage;
+    try {
+      const app = new Application();
+      await app.init({ canvas, width, height, background: '#0b1020', antialias: false, resolution: Math.min(1.5, window.devicePixelRatio || 1) });
+      this.app = app;
+      this.root = app.stage;
+    } catch (e) {
+      console.error('Pixi init failed:', e);
+      return; // bail; next update() call will try again if needed
+    }
+    // If WebGL context is lost, ask React overlay to draw device badges
+    try {
+      canvas.addEventListener('webglcontextlost', (ev: any) => { ev.preventDefault?.(); (window as any).__aihab_showOverlay = true; });
+      canvas.addEventListener('webglcontextrestored', () => { (window as any).__aihab_showOverlay = false; });
+    } catch {}
     this.reset();
     // Load external tileset if present; fallback to embedded
     try {
       const ext = await loadExternalTileset();
       this.floorTexture = ext.floor; this.wallCapTexture = ext.wallCap;
     } catch {
-      this.floorTexture = await Texture.fromURL(floorTileDataURI);
-      this.wallCapTexture = await Texture.fromURL(wallCapDataURI);
+      this.floorTexture = await Assets.load(floorTileDataURI);
+      this.wallCapTexture = await Assets.load(wallCapDataURI);
     }
     // Load bubble texture and human sprite assets
-    try { this.bubbleTexture = await Texture.fromURL('/assets/bubbles/bubble_v2.png'); } catch { this.bubbleTexture = null; }
+    const base = (import.meta as any).env?.BASE_URL || '/';
+    const url = (p: string) => (base.endsWith('/') ? base : base + '/') + p.replace(/^\//,'');
+    try { this.bubbleTexture = await Assets.load(url('assets/bubbles/bubble_v2.png')); } catch (e) { console.warn('Bubble texture load failed', e); this.bubbleTexture = null; }
     try {
-      const full = await Texture.fromURL('/assets/characters/isabella.png');
-      this.humanBase = full.baseTexture;
-      const res = await fetch('/assets/characters/atlas.json');
+      const full = await Assets.load(url('assets/characters/isabella.png')) as Texture;
+      this.humanBase = (full as any).source || (full as any).baseTexture;
+      const res = await fetch(url('assets/characters/atlas.json'));
       this.humanAtlas = await res.json();
-    } catch { /* optional */ }
+    } catch (e) { console.warn('Character assets load failed (will fallback to 3x4 sheet if present):', e); }
     // Load GA tileset and derive a nice floor sub-tile (32x32 at top-left)
     try {
-      const tset = await Texture.fromURL('/assets/ga/tilesets/CuteRPG_Village_C02.png');
-      this.gaTilesBase = tset.baseTexture;
+      const tset = await Assets.load(url('assets/ga/tilesets/CuteRPG_Village_C02.png')) as Texture;
+      this.gaTilesBase = (tset as any).source || (tset as any).baseTexture;
       // pick a 32x32 region as floor and scale to iso diamond
-      const sub = new Texture({ baseTexture: this.gaTilesBase, frame: new Rectangle(0, 0, 32, 32) });
+      const sub = new Texture({ source: this.gaTilesBase, frame: new Rectangle(0, 0, 32, 32) });
       this.gaFloorTile = sub;
     } catch { /* optional */ }
 
@@ -131,8 +150,18 @@ export class PixiScene {
     // Update human avatar movement between rooms in a simple 2D pixel style
     this.updateHuman(world, bandH);
 
+    // Additional residents (people)
+    this.updatePeople(world, bandH);
+
     // Show recent links/actions as lines and impact popups
     this.updateActionOverlays(world);
+
+    // Expose a tiny health hint for the React overlay: if we have devices
+    // in the world but no corresponding Pixi device layers, ask the fallback
+    // overlay to render so users still see icons when WebGL misbehaves.
+    try {
+      (window as any).__aihab_showOverlay = Object.keys(world.devices || {}).length > 0 && Object.keys(this.deviceLayers || {}).length === 0;
+    } catch {}
   }
 
   setOnSelect(handler: (sel: { type: 'device'|'human'; id?: string }) => void) {
@@ -172,6 +201,8 @@ export class PixiScene {
       let layer = this.roomLayers[id];
       if (!layer) {
         layer = new Container();
+        // Keep room backgrounds below everything else
+        (layer as any).zIndex = -1000 + idx;
         this.world!.addChild(layer);
         this.roomLayers[id] = layer;
       }
@@ -230,10 +261,19 @@ export class PixiScene {
             const cx = cidx * this.isoTile.w + (r % 2 ? this.isoTile.w / 2 : 0);
             const cy = roomY + 8 + r * (this.isoTile.h / 2);
             if (this.tileStyle === 'textured' && (this.floorTexture || this.gaFloorTile)) {
-              const tex = this.gaFloorTile || this.floorTexture!;
-              const sp = new Sprite(tex);
-              sp.x = cx; sp.y = cy; sp.width = this.isoTile.w; sp.height = this.isoTile.h;
-              layer.addChild(sp);
+              try {
+                const tex = this.gaFloorTile || this.floorTexture!;
+                const sp = new Sprite(tex);
+                sp.x = cx; sp.y = cy; sp.width = this.isoTile.w; sp.height = this.isoTile.h;
+                layer.addChild(sp);
+              } catch (err) {
+                console.warn('Falling back to vector tiles after WebGL error:', err);
+                this.tileStyle = 'vector';
+                const tile = new Graphics();
+                tile.poly([0, this.isoTile.h / 2, this.isoTile.w / 2, 0, this.isoTile.w, this.isoTile.h / 2, this.isoTile.w / 2, this.isoTile.h])
+                  .fill({ color: (r + cidx) % 2 ? 0x12203f : 0x0e1a35, alpha: 1 });
+                tile.x = cx; tile.y = cy; layer.addChild(tile);
+              }
             } else {
               const tile = new Graphics();
               tile.poly([0, this.isoTile.h / 2, this.isoTile.w / 2, 0, this.isoTile.w, this.isoTile.h / 2, this.isoTile.w / 2, this.isoTile.h])
@@ -260,7 +300,7 @@ export class PixiScene {
       // subtle grid for 2D-game feel
       if (this.renderMode === 'flat') {
         const grid = new Graphics();
-        grid.lineStyle({ width: 1, color: 0x1f2a44, alpha: 0.5 });
+        grid.setStrokeStyle({ width: 1, color: 0x1f2a44, alpha: 0.5 });
         const tile = 48;
         for (let x = 0; x <= width; x += tile) {
           grid.moveTo(x, roomY).lineTo(x, roomY + bandH);
@@ -268,6 +308,7 @@ export class PixiScene {
         for (let y = roomY; y <= roomY + bandH; y += tile) {
           grid.moveTo(0, y).lineTo(width, y);
         }
+        grid.stroke();
         layer.addChild(g);
         layer.addChild(wall);
         layer.addChild(grid);
@@ -299,6 +340,10 @@ export class PixiScene {
     const height = Math.max(this.app.renderer.height, 900);
 
     const seen = new Set<string>();
+    // Show at most one auto bubble (most recent event); others only on hover
+    const recent = this.recentEvents.slice().reverse();
+    const lastEvent = recent.find((e:any) => e.kind === 'device_action' || e.kind === 'device_message' || e.kind === 'human_impact');
+    const primaryBubbleId: string | null = lastEvent?.deviceId || null;
 
     devices.forEach(d => {
       seen.add(d.id);
@@ -340,7 +385,7 @@ export class PixiScene {
         else if (e.kind === 'human_impact') explainRaw = (e.data?.impact === 'help' ? '🙂' : e.data?.impact === 'harm' ? '⚠️' : '…') + ` ${e.data?.metric || ''}`;
       }
       const explain = explainRaw ? `${explainRaw}` : '';
-      const showBubble = explain && (d.status === 'acting' || this.hovered === d.id);
+      const showBubble = explain && ((d.status === 'acting' && d.id === primaryBubbleId) || this.hovered === d.id);
       if (showBubble) {
         const hash = explain.slice(0, 64);
         if (this.lastExplainHash[d.id] !== hash) {
@@ -350,28 +395,28 @@ export class PixiScene {
         const ageMs = performance.now() - (this.lastExplainAt[d.id] || 0);
         const alpha = Math.max(0, Math.min(1, 1 - ageMs / 2400)); // fade out ~2.4s
 
-        const bubbleText = explain.length > 100 ? explain.slice(0, 97) + '…' : explain;
-        const text = new Text({ text: bubbleText, style: new TextStyle({ fill: '#e5e7eb', fontSize: 12, wordWrap: true, wordWrapWidth: 200, fontFamily: 'sans-serif' }) });
+        const bubbleText = explain.length > 120 ? explain.slice(0, 117) + '…' : explain;
+        const text = new Text({ text: bubbleText, style: new TextStyle({ fill: '#e5e7eb', fontSize: 12, wordWrap: true, wordWrapWidth: 160, fontFamily: 'sans-serif' }) });
         // avoid overlap: offset by device hash
         const off = (d.id.charCodeAt(d.id.length - 1) % 3) * 12;
-        text.x = 18; text.y = -42 - off;
+        text.x = 16; text.y = -54 - off;
 
         const pad = 8;
-        const w = Math.min(280, Math.max(20, text.width + pad * 2));
-        const h = text.height + pad * 2;
+        const w = Math.min(220, Math.max(20, text.width + pad * 2));
+        const h = Math.max(24, text.height + pad * 2);
         if (this.theme === 'pixel' && this.bubbleTexture) {
           const sp = new Sprite(this.bubbleTexture);
-          sp.x = 6; sp.y = -54 - off; sp.width = Math.max(80, w + 28); sp.height = Math.max(40, h + 18);
+          sp.x = 4; sp.y = -66 - off; sp.width = Math.max(80, w + 28); sp.height = Math.max(40, h + 18);
           sp.alpha = alpha;
           text.style.fill = '#0f172a';
-          text.x = 16; text.y = -48 - off;
+          text.x = 14; text.y = -60 - off;
           text.alpha = alpha;
           c.addChild(sp); c.addChild(text);
         } else {
           const bg = new Graphics();
           // Dark bubble fallback
-          bg.roundRect(14, -46 - off, w, h, 6).fill({ color: 0x111827, alpha }).stroke({ width: 1, color: 0x334155, alpha: 0.8 * alpha });
-          bg.moveTo(14 + 12, -46 - off + h).lineTo(14 + 22, -46 - off + h).lineTo(14 + 18, -46 - off + h + 8).fill({ color: 0x111827, alpha });
+          bg.roundRect(12, -58 - off, w, h, 6).fill({ color: 0x111827, alpha }).stroke({ width: 1, color: 0x334155, alpha: 0.8 * alpha });
+          bg.moveTo(12 + 12, -58 - off + h).lineTo(12 + 22, -58 - off + h).lineTo(12 + 18, -58 - off + h + 8).fill({ color: 0x111827, alpha });
           bg.alpha = alpha; text.alpha = alpha; c.addChild(bg); c.addChild(text);
         }
       }
@@ -383,7 +428,7 @@ export class PixiScene {
       const t = new Text({ text: initials, style: new TextStyle({ fill: '#cbd5e1', fontSize: 9 }) }); t.x = -8; t.y = -24;
       c.addChild(chip); c.addChild(t);
       const label = new Text({ text: d.spec.name, style: new TextStyle({ fill: '#94a3b8', fontSize: 10 }) });
-      label.x = -Math.min(60, label.width / 2); label.y = 16; c.addChild(label);
+      label.x = -Math.min(60, label.width / 2); label.y = 18; if (!showBubble) c.addChild(label);
 
       // Gentle roaming within room band
       const target = (d as any).defaults?.wanderTarget || this.pickWanderTarget(d, width, height);
@@ -394,7 +439,7 @@ export class PixiScene {
       c.x = Math.round(nx);
       c.y = Math.round(ny);
       // Depth sorting: higher y on top
-      (c as any).zIndex = ny;
+      (c as any).zIndex = 1000 + ny; // ensure above room layers
       if (Math.hypot(target.x - nx, target.y - ny) < 8) {
         (d as any).defaults = (d as any).defaults || {};
         (d as any).defaults.wanderTarget = this.pickWanderTarget(d, width, height);
@@ -435,8 +480,7 @@ export class PixiScene {
       this.humanLayer.cursor = 'pointer';
       this.humanLayer.on('pointerdown', () => { this.onSelect && this.onSelect({ type: 'human' }); });
     }
-    // Clear for redraw
-    this.humanLayer.removeChildren();
+    // Do not clear/recreate children each frame; maintain and update only
 
     // Current position (persist on container)
     const carrier = this.humanLayer as any;
@@ -509,38 +553,224 @@ export class PixiScene {
     const ny = currentY + (ty - currentY) * 0.06;
     this.humanLayer.x = Math.round(nx);
     this.humanLayer.y = Math.round(ny);
-    (this.humanLayer as any).zIndex = ny + 1;
+    // Ensure human draws above devices and props
+    (this.humanLayer as any).zIndex = 5000 + ny;
 
     // Draw animated character using atlas if available; fallback to vector
-    if (this.humanAtlas && this.humanBase) {
+    if (this.humanBase && (this.humanAtlas || true)) {
       if (!this.humanAnim) {
-        // Build textures from atlas frames
-        const makeTex = (f: any) => new Texture({ baseTexture: this.humanBase!, frame: new Rectangle(f.frame.x, f.frame.y, f.frame.w, f.frame.h) });
-        const frames = this.humanAtlas.frames as any[];
-        const up = frames.filter(f=> f.filename.startsWith('up-walk')).map(makeTex);
-        const down = frames.filter(f=> f.filename.startsWith('down-walk')).map(makeTex);
-        const left = frames.filter(f=> f.filename.startsWith('left-walk')).map(makeTex);
-        const right = frames.filter(f=> f.filename.startsWith('right-walk')).map(makeTex);
-        const anim = new AnimatedSprite(down.length ? down : frames.slice(0,1).map(makeTex));
+        let up: Texture[] = [], down: Texture[] = [], left: Texture[] = [], right: Texture[] = [];
+        if (this.humanAtlas && Array.isArray(this.humanAtlas.frames)) {
+          // Build textures from GA atlas JSON
+          const makeTex = (f: any) => new Texture({ source: this.humanBase!, frame: new Rectangle(f.frame.x, f.frame.y, f.frame.w, f.frame.h) });
+          const frames = this.humanAtlas.frames as any[];
+          up = frames.filter(f=> (f.filename||'').startsWith('up-walk')).map(makeTex);
+          down = frames.filter(f=> (f.filename||'').startsWith('down-walk')).map(makeTex);
+          left = frames.filter(f=> (f.filename||'').startsWith('left-walk')).map(makeTex);
+          right = frames.filter(f=> (f.filename||'').startsWith('right-walk')).map(makeTex);
+        }
+
+        // Fallback: auto-slice a classic 3x4 RPG sheet (columns=3, rows=4)
+        if ((!up.length && !down.length && !left.length && !right.length) && this.humanBase) {
+          const cols = 3; const rows = 4;
+          const fw = Math.floor(this.humanBase.width / cols) || 32;
+          const fh = Math.floor(this.humanBase.height / rows) || 32;
+          const sliceRow = (r: number) => [0,1,2].map(c => new Texture({ source: this.humanBase!, frame: new Rectangle(c*fw, r*fh, fw, fh) }));
+          // Typical row order: 0=down,1=left,2=right,3=up
+          down = sliceRow(0); left = sliceRow(1); right = sliceRow(2); up = sliceRow(3);
+        }
+
+        const initialSeq = down.length ? down : (left.length ? left : (right.length ? right : up));
+        const anim = new AnimatedSprite(initialSeq.length ? initialSeq : [new Texture({ source: this.humanBase!, frame: new Rectangle(0,0,32,32) })]);
         anim.animationSpeed = 0.15; anim.anchor.set(0.5, 0.5); this.humanAnim = anim; this.humanLayer.addChild(anim);
+        // Remove fallback body if present
+        const fb = (this.humanLayer as any).__fallbackBody; if (fb && fb.parent) { try { fb.parent.removeChild(fb); (fb as any)?.destroy?.(); } catch {} (this.humanLayer as any).__fallbackBody = null; }
         (this as any).__humanAnims = { up, down, left, right };
       }
       // choose direction based on velocity
       const vx = tx - nx; const vy = ty - ny;
       const dirs = (this as any).__humanAnims;
-      let seq = dirs.down;
-      if (Math.abs(vx) > Math.abs(vy)) seq = vx > 0 ? dirs.right : dirs.left; else seq = vy > 0 ? dirs.down : dirs.up;
-      if (seq && seq.length) { this.humanAnim!.textures = seq; if (!this.humanAnim!.playing) this.humanAnim!.play(); }
+      let seq = dirs.down; let dirName = 'down';
+      if (Math.abs(vx) > Math.abs(vy)) { if (vx > 0) { seq = dirs.right; dirName = 'right'; } else { seq = dirs.left; dirName = 'left'; } }
+      else { if (vy > 0) { seq = dirs.down; dirName = 'down'; } else { seq = dirs.up; dirName = 'up'; } }
+      const cur = (this as any).__humanDir;
+      if (seq && seq.length && cur !== dirName) {
+        this.humanAnim!.textures = seq; (this as any).__humanDir = dirName; if (!this.humanAnim!.playing) this.humanAnim!.play();
+      }
     } else {
-      const body = new Graphics();
-      body.ellipse(0, 12, 10, 4).fill({ color: 0x000000, alpha: 0.25 });
-      body.roundRect(-4, -16, 8, 8, 2).fill(0xffe0bd);
-      body.roundRect(-6, -8, 12, 12, 2).fill(0x3b82f6);
-      body.rect(-6, 4, 5, 6).fill(0x1f2937); body.rect(1, 4, 5, 6).fill(0x1f2937);
-      this.humanLayer.addChild(body);
+      // Fallback simple body if texture not ready (add once)
+      if (!(this.humanLayer as any).__fallbackBody) {
+        const body = new Graphics();
+        body.ellipse(0, 12, 10, 4).fill({ color: 0x000000, alpha: 0.25 });
+        body.roundRect(-4, -16, 8, 8, 2).fill(0xffe0bd);
+        body.roundRect(-6, -8, 12, 12, 2).fill(0x3b82f6);
+        body.rect(-6, 4, 5, 6).fill(0x1f2937); body.rect(1, 4, 5, 6).fill(0x1f2937);
+        this.humanLayer.addChild(body);
+        (this.humanLayer as any).__fallbackBody = body;
+      }
     }
-    const label = new Text({ text: 'Human', style: new TextStyle({ fill: '#cbd5e1', fontSize: 10 }) });
-    label.x = -12; label.y = -22; this.humanLayer.addChild(label);
+    if (!this.humanLabel) {
+      this.humanLabel = new Text({ text: 'Human', style: new TextStyle({ fill: '#cbd5e1', fontSize: 10 }) });
+      this.humanLabel.x = -12; this.humanLabel.y = -22; this.humanLayer.addChild(this.humanLabel);
+    } else {
+      this.humanLabel.x = -12; this.humanLabel.y = -22;
+      if (!this.humanLabel.parent) this.humanLayer.addChild(this.humanLabel);
+    }
+  }
+
+  private updatePeople(world: any, bandH: number) {
+    if (!this.app || !this.world) return;
+    const width = Math.max(this.app.renderer.width, 1200);
+    const height = Math.max(this.app.renderer.height, 900);
+    const people: any = world.people || {};
+    const ids = Object.keys(people);
+
+    ids.forEach(id => {
+      const p = people[id];
+      let entry = this.personLayers[id];
+      if (!entry) {
+        const c = new Container();
+        c.eventMode = 'static'; c.cursor = 'pointer';
+        c.on('pointerdown', () => { this.onSelect && this.onSelect({ type: 'human', id }); });
+        this.world!.addChild(c);
+        this.personLayers[id] = { layer: c };
+        entry = this.personLayers[id];
+      }
+      const c = entry.layer;
+
+      // Determine target room similar to human
+      const hour = Math.floor((world.timeSec / 60) % 24);
+      const targetRoom = (hour >= 6 && hour < 9) ? 'kitchen' : ((hour >= 21 || hour < 6) ? 'bedroom' : 'living_room');
+      const roomIdx = ['living_room','kitchen','bedroom'].indexOf(targetRoom);
+      const centerY = roomIdx >= 0 ? roomIdx * (Math.max(height, 900) / 3) + bandH / 2 : bandH / 2;
+      const tx = Math.min(360, width * (0.25 + (id.charCodeAt(0)%20)/100));
+      const ty = centerY + ((id.charCodeAt(1)||0)%41) - 20;
+
+      const cx = Math.max(16, Math.min(width-16, p.x || 80));
+      const cy = Math.max(16, Math.min(height-16, p.y || bandH/2));
+      const nx = cx + (tx - cx) * 0.06; const ny = cy + (ty - cy) * 0.06;
+      c.x = Math.round(nx); c.y = Math.round(ny); (c as any).zIndex = 5000 + ny;
+
+      // Animated sprite per-person: honor p.sprite if provided, else fallback to shared humanBase
+      const baseUrl = (import.meta as any).env?.BASE_URL || '/';
+      const resolve = (path: string) => {
+        const rel = (path || '').replace(/^\/+/, '');
+        return (baseUrl.endsWith('/') ? baseUrl : baseUrl + '/') + rel;
+      };
+      const spritePath = p.sprite ? resolve(p.sprite) : null;
+
+      // Ensure frames are available in cache; build 3x4 slices for the given sprite
+      const ensureFrames = async (src: string) => {
+        if (this.personSpriteCache[src]) return;
+        if (!this.personSpriteLoading[src]) {
+          this.personSpriteLoading[src] = (async () => {
+            try {
+              const tex = await Assets.load(src) as Texture;
+              const base = (tex as any).source || (tex as any).baseTexture;
+              const cols = 3, rows = 4;
+              const fw = Math.floor((base.width || 96) / cols) || 32;
+              const fh = Math.floor((base.height || 128) / rows) || 32;
+              const sliceRow = (r: number) => [0,1,2].map(c => new Texture({ source: base, frame: new Rectangle(c*fw, r*fh, fw, fh) }));
+              this.personSpriteCache[src] = {
+                down: sliceRow(0), left: sliceRow(1), right: sliceRow(2), up: sliceRow(3)
+              };
+            } catch (e) {
+              console.warn('Failed to load person sprite, will fallback to shared humanBase:', src, e);
+              this.personSpriteCache[src] = { up: [], down: [], left: [], right: [] };
+            } finally {
+              delete this.personSpriteLoading[src];
+            }
+          })();
+        }
+        await this.personSpriteLoading[src];
+      };
+
+      // Determine which frames set to use
+      let dirs: { up: Texture[]; down: Texture[]; left: Texture[]; right: Texture[] } | null = null;
+      if (spritePath) {
+        if (!this.personSpriteCache[spritePath]) {
+          // Kick off async load; draw placeholder this frame
+          ensureFrames(spritePath);
+        } else {
+          dirs = this.personSpriteCache[spritePath];
+        }
+      }
+
+      // Fallback to shared humanBase if no per-person frames available
+      if (!dirs) {
+        if (!this.humanBase) {
+          // Draw a simple placeholder dot until any texture loads
+          const dot = new Graphics(); dot.circle(0, 0, 6).fill(0x93c5fd); c.addChild(dot);
+          const label = new Text({ text: p.name, style: new TextStyle({ fill: '#cbd5e1', fontSize: 10 }) });
+          label.x = -Math.min(40, label.width/2); label.y = -26; c.addChild(label);
+          return;
+        }
+        // Build from shared humanBase (atlas first, else 3x4)
+        let up: Texture[] = [], down: Texture[] = [], left: Texture[] = [], right: Texture[] = [];
+        if (this.humanAtlas && Array.isArray(this.humanAtlas.frames)) {
+          const makeTex = (f: any) => new Texture({ source: this.humanBase!, frame: new Rectangle(f.frame.x, f.frame.y, f.frame.w, f.frame.h) });
+          const frames = this.humanAtlas.frames as any[];
+          up = frames.filter(f=> (f.filename||'').startsWith('up-walk')).map(makeTex);
+          down = frames.filter(f=> (f.filename||'').startsWith('down-walk')).map(makeTex);
+          left = frames.filter(f=> (f.filename||'').startsWith('left-walk')).map(makeTex);
+          right = frames.filter(f=> (f.filename||'').startsWith('right-walk')).map(makeTex);
+        }
+        if ((!up.length && !down.length && !left.length && !right.length) && this.humanBase) {
+          const cols = 3; const rows = 4;
+          const fw = Math.floor(this.humanBase.width / cols) || 32;
+          const fh = Math.floor(this.humanBase.height / rows) || 32;
+          const sliceRow = (r: number) => [0,1,2].map(c => new Texture({ source: this.humanBase!, frame: new Rectangle(c*fw, r*fh, fw, fh) }));
+          down = sliceRow(0); left = sliceRow(1); right = sliceRow(2); up = sliceRow(3);
+        }
+        dirs = { up, down, left, right };
+      }
+
+      if (!entry.anim) {
+        const initial = (dirs!.down && dirs!.down.length) ? dirs!.down : (dirs!.left.length ? dirs!.left : (dirs!.right.length ? dirs!.right : dirs!.up));
+        if (!initial || !initial.length) {
+          if (!(c as any).__placeholderDot) {
+            const dot = new Graphics(); dot.circle(0, 0, 6).fill(0x93c5fd); c.addChild(dot);
+            (c as any).__placeholderDot = dot;
+          }
+          if (!entry.label) {
+            entry.label = new Text({ text: p.name, style: new TextStyle({ fill: '#cbd5e1', fontSize: 10 }) });
+            entry.label.x = -Math.min(40, entry.label.width/2); entry.label.y = -26; c.addChild(entry.label);
+          } else {
+            entry.label.text = p.name; entry.label.x = -Math.min(40, entry.label.width/2); entry.label.y = -26;
+            if (!entry.label.parent) c.addChild(entry.label);
+          }
+          return;
+        }
+        const anim = new AnimatedSprite(initial);
+        anim.animationSpeed = 0.15; anim.anchor.set(0.5, 0.5);
+        entry.anim = anim; if (!anim.parent) c.addChild(anim);
+        // Remove placeholder if present
+        const ph = (c as any).__placeholderDot; if (ph && ph.parent) { try { ph.parent.removeChild(ph); (ph as any)?.destroy?.(); } catch {} (c as any).__placeholderDot = null; }
+        (c as any).__dirs = dirs;
+      } else if ((c as any).__dirs !== dirs && dirs) {
+        // Update cached dirs if sprite changed
+        (c as any).__dirs = dirs;
+      }
+      const anim = entry.anim!; dirs = (c as any).__dirs;
+      const vx = tx - nx; const vy = ty - ny;
+      let seq = dirs.down; let dirName = 'down';
+      if (Math.abs(vx) > Math.abs(vy)) { if (vx > 0) { seq = dirs.right; dirName = 'right'; } else { seq = dirs.left; dirName = 'left'; } }
+      else { if (vy > 0) { seq = dirs.down; dirName = 'down'; } else { seq = dirs.up; dirName = 'up'; } }
+      const cur = (c as any).__dirName;
+      if (seq && seq.length && cur !== dirName) { anim.textures = seq; (c as any).__dirName = dirName; if (!anim.playing) anim.play(); }
+
+      // Label (ensure single instance)
+      if (!entry.label) {
+        entry.label = new Text({ text: p.name, style: new TextStyle({ fill: '#cbd5e1', fontSize: 10 }) });
+        entry.label.x = -Math.min(40, entry.label.width/2); entry.label.y = -26; c.addChild(entry.label);
+      } else {
+        entry.label.text = p.name; entry.label.x = -Math.min(40, entry.label.width/2); entry.label.y = -26;
+        if (!entry.label.parent) c.addChild(entry.label);
+      }
+    });
+
+    // cleanup missing
+    Object.keys(this.personLayers).forEach(id => { if (!people[id]) { try { const c = this.personLayers[id].layer; c.parent?.removeChild(c); (c as any)?.destroy?.(); } catch {} delete this.personLayers[id]; } });
   }
 
   private roomNameAtY(y: number, bandH: number): 'living_room'|'kitchen'|'bedroom' {
@@ -599,8 +829,9 @@ export class PixiScene {
       const box = new Graphics();
       box.roundRect(-16, -12, 32, 20, 4).fill(0xc3d4e9).stroke({ width: 2, color: 0x7a98b8, alpha: 0.9 });
       const grill = new Graphics();
-      grill.lineStyle({ width: 1, color: 0x7a98b8, alpha: 0.7 });
+      grill.setStrokeStyle({ width: 1, color: 0x7a98b8, alpha: 0.7 });
       for (let i = -12; i <= 6; i += 4) { grill.moveTo(-14, i).lineTo(14, i); }
+      grill.stroke();
       c.addChild(box); c.addChild(grill);
     } else if (name.includes('tv') || name.includes('screen')) {
       const stand = new Graphics();
@@ -656,8 +887,10 @@ export class PixiScene {
       c.addChild(slab);
     } else if (name.includes('sprinkler')) {
       const head = new Graphics(); head.circle(0, 0, 4).fill(0x2563eb); c.addChild(head);
-      const spray = new Graphics(); spray.lineStyle({ width: 1, color: 0x93c5fd, alpha: 0.9 })
-        .moveTo(0,0).lineTo(10, -6).moveTo(0,0).lineTo(12,0).moveTo(0,0).lineTo(10,6);
+      const spray = new Graphics();
+      spray.setStrokeStyle({ width: 1, color: 0x93c5fd, alpha: 0.9 });
+      spray.moveTo(0,0).lineTo(10, -6).moveTo(0,0).lineTo(12,0).moveTo(0,0).lineTo(10,6);
+      spray.stroke();
       c.addChild(spray);
     } else if (name.includes('washer') || name.includes('washing')) {
       const box = new Graphics(); box.roundRect(-12, -12, 24, 24, 3).fill(0xe5e7eb).stroke({ width:2, color:0x9ca3af});
@@ -676,6 +909,29 @@ export class PixiScene {
       dot.circle(0, 0, 12).fill(this.colorForDevice(d)).stroke({ width: 2, color: 0x0b1020, alpha: 0.8 });
       c.addChild(dot);
     }
+
+    // Center icon overlay (emoji) for instant recognition
+    try {
+      const icon = getDeviceIcon(d as any);
+      if (icon) {
+        // Contrast badge behind the emoji so it's always visible
+        const badge = new Graphics();
+        badge.circle(0, -2, 11).fill(0xffffff).stroke({ width: 2, color: 0x0b1020, alpha: 0.8 });
+        c.addChild(badge);
+
+        const t = new Text({
+          text: icon,
+          style: new TextStyle({
+            fontSize: 16,
+            fill: '#111827',
+            fontFamily: 'Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, system-ui, sans-serif'
+          })
+        });
+        // Manually center (no reliance on Text.anchor support across versions)
+        t.x = -t.width / 2; t.y = -2 - t.height / 2;
+        c.addChild(t);
+      }
+    } catch {}
     return c;
   }
 
@@ -727,7 +983,7 @@ export class PixiScene {
       const idx = hash % (cols * rows);
       const tx = (idx % cols) * 32;
       const ty = Math.floor(idx / cols) * 32;
-      const tex = new Texture({ baseTexture: this.gaTilesBase, frame: new Rectangle(tx, ty, 32, 32) });
+      const tex = new Texture({ source: this.gaTilesBase, frame: new Rectangle(tx, ty, 32, 32) });
       const sp = new Sprite(tex);
       sp.anchor.set(0.5, 0.9);
       container.addChild(sp);
@@ -789,22 +1045,23 @@ export class PixiScene {
     // Get human position
     const humanPos = this.humanLayer ? { x: (this.humanLayer.parent?.x || 0) + this.humanLayer.x, y: (this.humanLayer.parent?.y || 0) + this.humanLayer.y } : null;
 
-    // Lines from device → human for recent comms and actions
-    world.eventLog.slice(-30).forEach((e: any, i: number) => {
+    // Lines from device → human for recent comms and actions (limited for clarity)
+    world.eventLog.slice(-12).forEach((e: any, i: number) => {
       if (!humanPos) return;
-      if (now - e.at > 25) return; // only last ~25s
+      if (now - e.at > 10) return; // only last ~10s
       if (e.kind !== 'device_message' && e.kind !== 'device_action') return;
       const p = posOf(e.deviceId);
       if (!p) return;
       const g = new Graphics();
-      const alpha = Math.max(0.2, 1 - (now - e.at) / 25);
-      g.lineStyle({ width: 2, color: 0x60a5fa, alpha });
+      const alpha = Math.max(0.15, 1 - (now - e.at) / 10);
+      g.setStrokeStyle({ width: 1.5, color: 0x60a5fa, alpha });
       g.moveTo(p.x, p.y).lineTo(humanPos.x, humanPos.y);
+      g.stroke();
       this.transientLayer!.addChild(g);
     });
 
     // Impact popups near human
-    const impacts = world.eventLog.slice(-20).filter((e: any) => e.kind === 'human_impact' && now - e.at <= 25);
+    const impacts = world.eventLog.slice(-12).filter((e: any) => e.kind === 'human_impact' && now - e.at <= 10);
     impacts.forEach((e: any, idx: number) => {
       if (!humanPos) return;
       const color = e.data?.impact === 'help' ? 0x22c55e : 0xef4444;
@@ -822,10 +1079,44 @@ export class PixiScene {
   }
 
   center() {
-    if (!this.world) return;
-    this.world.x = 0;
-    this.world.y = 0;
-    this.world.scale.set(1);
+    if (!this.world || !this.app) return;
+    // Compute bounds from devices and human/person layers; fall back to full canvas
+    const pts: {x:number;y:number}[] = [];
+    Object.values(this.deviceLayers).forEach(c => { pts.push({ x:(c.parent?.x||0)+c.x, y:(c.parent?.y||0)+c.y }); });
+    if (this.humanLayer) pts.push({ x:(this.humanLayer.parent?.x||0)+this.humanLayer.x, y:(this.humanLayer.parent?.y||0)+this.humanLayer.y });
+    Object.values(this.personLayers).forEach(p => { pts.push({ x:(p.layer.parent?.x||0)+p.layer.x, y:(p.layer.parent?.y||0)+p.layer.y }); });
+    // If no dynamic entities yet, try to center around tiled rooms
+    if (pts.length === 0) {
+      if (this.tiledRooms && this.tiledRooms.length) {
+        const minX = Math.min(...this.tiledRooms.map(r=>r.x));
+        const maxX = Math.max(...this.tiledRooms.map(r=>r.x + r.width));
+        const minY = Math.min(...this.tiledRooms.map(r=>r.y));
+        const maxY = Math.max(...this.tiledRooms.map(r=>r.y + r.height));
+        const cx = (minX + maxX)/2, cy = (minY + maxY)/2;
+        const w = Math.max(200, maxX - minX + 200);
+        const h = Math.max(200, maxY - minY + 200);
+        const sx = (this.app.renderer.width - 40) / w;
+        const sy = (this.app.renderer.height - 40) / h;
+        const scale = Math.max(0.6, Math.min(2.2, Math.min(sx, sy)));
+        this.world.scale.set(scale);
+        this.world.x = (this.app.renderer.width/2) - cx*scale;
+        this.world.y = (this.app.renderer.height/2) - cy*scale;
+        return;
+      }
+      this.world.x = 0; this.world.y = 0; this.world.scale.set(1); return;
+    }
+    const minX = Math.min(...pts.map(p=>p.x)), maxX = Math.max(...pts.map(p=>p.x));
+    const minY = Math.min(...pts.map(p=>p.y)), maxY = Math.max(...pts.map(p=>p.y));
+    const cx = (minX + maxX)/2, cy = (minY + maxY)/2;
+    // Fit to view
+    const w = Math.max(200, maxX - minX + 200);
+    const h = Math.max(200, maxY - minY + 200);
+    const sx = (this.app.renderer.width - 40) / w;
+    const sy = (this.app.renderer.height - 40) / h;
+    const scale = Math.max(0.6, Math.min(2.2, Math.min(sx, sy)));
+    this.world.scale.set(scale);
+    this.world.x = (this.app.renderer.width/2) - cx*scale;
+    this.world.y = (this.app.renderer.height/2) - cy*scale;
   }
 
   private colorForDevice(d: DeviceRuntime): number {
