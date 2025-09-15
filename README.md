@@ -4,7 +4,10 @@
 
 <img alt="AI Habitat – Harmony or Havoc?" src="docs/hero.png" width="820" />
 
+<br/>
 
+
+</div>
 
 A 2D/2.5D educational sandbox where players create and manage smart environments filled with AI devices that come to life with personalities, goals, and quirks. Learn about AI alignment through emergent storytelling as your AI creations interact, cooperate, conflict, and sometimes spectacularly malfunction.
 
